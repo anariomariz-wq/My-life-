@@ -227,7 +227,7 @@ function loadLocal(){try{const j=JSON.parse(localStorage.getItem(LS)||'{}');S.se
 function saveLocal(){try{const o={settings:S.settings};COLS.forEach(c=>o[c]=S[c]);localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
 let sT;function write(path){clearTimeout(sT);sT=setTimeout(saveLocal,150);if(path)SY.mark(path)}
 /* ---------- SYNC (Supabase) ---------- */
-const SB_URL='__SB_URL__',SB_KEY='__SB_KEY__',ML='mylife-sync';
+const SB_URL='https://fcjtzwevpfuobhvtszss.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjanR6d2V2cGZ1b2JodnRzenNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyNTQ1MTcsImV4cCI6MjExMDgzMDUxN30.UtDV5blrD6iGCZfi2RS8rQT82gRdrVQ-XYKeGY5GjIw',ML='mylife-sync';
 const SY={m:{ts:{},dirty:{},since:0,ses:null,last:0},busy:false,t:null,
   load(){try{Object.assign(this.m,JSON.parse(localStorage.getItem(ML)||'{}'))}catch(e){}},
   save(){try{localStorage.setItem(ML,JSON.stringify(this.m))}catch(e){}},
@@ -243,7 +243,7 @@ const SY={m:{ts:{},dirty:{},since:0,ses:null,last:0},busy:false,t:null,
   async fresh(){const s=this.m.ses;if(s&&s.expires_at&&Date.now()/1000<s.expires_at-60)return;
     const j=await this.api('POST','/auth/v1/token?grant_type=refresh_token',{refresh_token:s.refresh_token},false);this.keep(j)},
   keep(j){this.m.ses={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at||(Date.now()/1000+(j.expires_in||3600)),email:(j.user&&j.user.email)||(this.m.ses&&this.m.ses.email)};this.save()},
-  async login(email,pw,signup){if(signup){const j=await this.api('POST','/auth/v1/signup',{email,password:pw},false);if(!j||!j.access_token)return 'confirm';this.keep(j)}
+  async login(email,pw,signup){if(signup){const j=await this.api('POST','/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+location.pathname),{email,password:pw},false);if(!j||!j.access_token)return 'confirm';this.keep(j)}
     else this.keep(await this.api('POST','/auth/v1/token?grant_type=password',{email,password:pw},false));
     this.m.since=0;await this.pull(true);await this.push();return 'ok'},
   logout(){this.m.ses=null;this.m.since=0;this.save()},
@@ -665,7 +665,7 @@ app.addEventListener('click',e=>{
     new Response(gz).arrayBuffer().then(buf=>{const u=new Uint8Array(buf);let bin='';for(let i=0;i<u.length;i+=8192)bin+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
       const code='ML1:'+btoa(bin);return navigator.clipboard.writeText(code).then(()=>toast('Código copiado. Cola-o no outro aparelho.'),()=>{S.draft.code=code;render(1);toast('Seleciona o código na caixa e copia-o.')})});return}
   else if(A==='sblogin'||A==='sbsignup'){const em=(S.draft.sbe||'').trim(),pw=S.draft.sbp||'';if(!em||pw.length<6){toast('Escreve o email e uma palavra-passe com 6 ou mais caracteres.');return}
-    toast('A ligar…');SY.login(em,pw,A==='sbsignup').then(r=>{S.draft.sbp='';if(r==='confirm')toast('Conta criada. Abre o email de confirmação e depois toca em Entrar.');else{SY.m.last=Date.now();SY.save();toast('Sincronização ligada')}render(1)}).catch(e=>toast('Não deu: '+(e.message||e)));return}
+    toast('A ligar…');SY.login(em,pw,A==='sbsignup').then(r=>{S.draft.sbp='';if(r==='confirm')toast('Conta criada! Abre o email do Supabase e toca no link de confirmação (se abrir uma página com erro, ignora). Depois volta aqui e toca em Entrar.');else{SY.m.last=Date.now();SY.save();toast('Sincronização ligada')}render(1)}).catch(e=>toast('Não deu: '+(e.message||e)));return}
   else if(A==='syncnow'){toast('A sincronizar…');SY.run().then(()=>{render(1);toast(SY.m.err?'Erro: '+SY.m.err:'Tudo sincronizado')});return}
   else if(A==='logout'){SY.logout();toast('Saíste da sincronização')}
   else if(A==='paste'){const v2=$('#code').value;loadCode(v2).then(()=>{S.draft.code='';location.hash='semana';render(1);toast('Dados carregados')}).catch(()=>toast('O código não está completo. Copia-o outra vez.'));return}
