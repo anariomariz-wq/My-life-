@@ -504,6 +504,8 @@ function vAreas(){
   <label class="l" for="imp">Carregar dados de um ficheiro</label><input id="imp" type="file"></div></div>`}
 /* ---------- DADOS ---------- */
 function vDados(){return `<div class="narrow"><h1>Os meus dados</h1>
+  <div class="card blk"><h2>Passar para outro aparelho</h2><p class="muted">Copia o código com todos os teus dados e cola-o na app do outro aparelho (iPad ou iPhone), na caixa abaixo.</p>
+  <button class="go" data-act="copycode">Copiar código dos meus dados</button></div>
   <div class="card blk"><h2>Colar código</h2><p class="muted">Copia o código que o Claude te enviou (começa por ML1:) e cola-o aqui.</p>
   <textarea id="code" data-draft="code" placeholder="Cola aqui o código">${dv('code')}</textarea><button class="go" data-act="paste">Carregar dados</button></div>
   <div class="blk"><h2>Cópia de segurança</h2><p class="muted">Os teus dados ficam guardados neste telemóvel. Faz uma cópia de vez em quando e guarda-a no Ficheiros.</p>
@@ -619,6 +621,10 @@ app.addEventListener('click',e=>{
   else if(A==='mdel'){const a=clone(S.areas[S.area]);a.meetings=(a.meetings||[]).filter(y=>y.id!==b.dataset.i);put('areas',S.area,a)}
   else if(A==='ladd'){let u=(S.draft.lurl||'').trim();if(!u){toast('Cola o link.');return}if(!/^https?:\/\//i.test(u))u='https://'+u;const a=clone(S.areas[S.area]);a.links=[...(a.links||[]),{id:'l'+uid(),t:(S.draft.ltit||'').trim(),u}];put('areas',S.area,a);S.draft.ltit='';S.draft.lurl=''}
   else if(A==='ldel'){const a=clone(S.areas[S.area]);a.links=(a.links||[]).filter(y=>y.id!==b.dataset.i);put('areas',S.area,a)}
+  else if(A==='copycode'){const o={settings:S.settings};COLS.forEach(c=>o[c]=S[c]);
+    const gz=new Blob([JSON.stringify(o)]).stream().pipeThrough(new CompressionStream('gzip'));
+    new Response(gz).arrayBuffer().then(buf=>{const u=new Uint8Array(buf);let bin='';for(let i=0;i<u.length;i+=8192)bin+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
+      const code='ML1:'+btoa(bin);return navigator.clipboard.writeText(code).then(()=>toast('Código copiado. Cola-o no outro aparelho.'),()=>{S.draft.code=code;render(1);toast('Seleciona o código na caixa e copia-o.')})});return}
   else if(A==='paste'){const v2=$('#code').value;loadCode(v2).then(()=>{S.draft.code='';location.hash='semana';render(1);toast('Dados carregados')}).catch(()=>toast('O código não está completo. Copia-o outra vez.'));return}
   else if(A==='adel'){const old=S.areas[id];del('areas',id);render(1);toast('Área removida',()=>put('areas',id,old));return}
   render(1);
