@@ -168,6 +168,10 @@ h1{color:var(--ink)!important;font-weight:600}
 .ring circle+circle{stroke:#2383e2}.dot.on{background:#2383e2;border-color:#2383e2}
 .wkrow .ok{color:var(--ink)}
 .load{border-radius:8px}
+.ic summary{list-style:none;cursor:pointer;color:var(--ink);display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;min-height:28px}.ic summary::-webkit-details-marker{display:none}.ic summary small{flex-basis:100%;color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ic[open] summary{margin-bottom:6px}.ic .pill{cursor:inherit;min-height:0;padding:1px 8px;font-size:12px}
+.ihd{display:flex;gap:6px;align-items:center}.ttl{font-weight:600;font-size:18px;border:0;padding:4px 0;min-height:36px;background:transparent}
+textarea.sm{min-height:56px}
+.li a{color:var(--ink);text-decoration:underline;overflow-wrap:anywhere}
 .tag{display:inline-block;font-size:12px;font-weight:500;padding:0 6px;border-radius:4px;margin-right:6px}
 h2{font-weight:600}
 h1,h2,.card h3,.big{font-family:inherit!important}h1{font-weight:700;letter-spacing:-.01em}.card h3{font-weight:600;font-size:18px}.card h3 .tag{font-size:13px!important}
@@ -179,7 +183,7 @@ h1,h2,.card h3,.big{font-family:inherit!important}h1{font-weight:700;letter-spac
 </head>
 <body>
 <header class="top"><nav class="tabs" id="tabs">
-<a href="#semana">Semana</a><a href="#habitos">Hábitos</a><a href="#treinos">Treinos</a><a href="#financas">Finanças</a><a href="#leituras">Livros e podcasts</a><a href="#cadeiras">Cadeiras</a><a href="#areas">Áreas</a>
+<a href="#semana">Semana</a><a href="#habitos">Hábitos</a><a href="#treinos">Treinos</a><a href="#financas">Finanças</a><a href="#leituras">Livros e podcasts</a><a href="#conteudo">Conteúdo</a><a href="#cadeiras">Cadeiras</a><a href="#areas">Áreas</a>
 </nav></header>
 <main class="wrap"><div id="app"></div><p id="note"></p></main>
 <div id="toast" hidden></div>
@@ -207,7 +211,7 @@ const num=v=>{if(v==null||v==='')return null;const x=parseFloat(String(v).replac
 const g1=x=>x.toLocaleString('pt-PT',{maximumFractionDigits:1});
 const short=k=>parse(k).toLocaleDateString('pt-PT',{day:'numeric',month:'short'});
 const until=k=>{const n=Math.round((parse(k)-today())/864e5);return n===0?'hoje':n===1?'amanhã':n<0?'há '+(-n)+' dias':'em '+n+' dias'};
-const COLS=['days','tx','weeks','workouts','reads','courses','areas'];
+const COLS=['days','tx','weeks','workouts','reads','courses','areas','posts'];
 const S={settings:null,sel:today(),month:new Date(today().getFullYear(),today().getMonth(),1),wk:monday(today()),type:'out',cat:'Comida',wtype:'Glúteo',wfeel:4,rkind:'Livro',rf:'Tudo',course:null,draft:{}};
 COLS.forEach(c=>S[c]={});
 const LS='mylife-v2';
@@ -264,10 +268,11 @@ function vSemana(){
   <div class="blk card prio"><h2>Prioridades da semana</h2>${tasks(w.prio,'p')}</div>
   <div class="blk days">${DN.map((n,i)=>{const dd=addD(S.wk,i),k=key(dd),e=evs.filter(x=>x.date===k);
     return `<div class="day ${k===t?'today':''}"><h3>${n}<span>${dd.getDate()}</span></h3>
-    <div class="plan">${Object.values(S.workouts).filter(x=>x.date===k).map(x=>`<span style="color:var(--tre);font-weight:500">Treino: ${esc(x.type)}</span><br>`).join('')}${e.filter(x=>!studyOn(k).some(s=>s.cid===x.cid&&s.type==='Avaliação')).map(x=>`<br><b>${esc(x.name)} · ${esc(x.course)}</b>`).join('')}</div>${tasks(w.days['d'+i],'d'+i)}${studyList(k)}</div>`}).join('')}</div>
+    <div class="plan">${areaEv(k)}${Object.values(S.workouts).filter(x=>x.date===k).map(x=>`<span style="color:var(--tre);font-weight:500">Treino: ${esc(x.type)}</span><br>`).join('')}${e.filter(x=>!studyOn(k).some(s=>s.cid===x.cid&&s.type==='Avaliação')).map(x=>`<br><b>${esc(x.name)} · ${esc(x.course)}</b>`).join('')}</div>${tasks(w.days['d'+i],'d'+i)}${studyList(k)}</div>`}).join('')}</div>
   <div class="blk"><h2>Mini reflection</h2><div class="refl">${RQ.map(([q,l])=>`<div><label class="l" for="r${q}">${l}</label><textarea id="r${q}" data-f="refl" data-k="${q}">${esc(w.refl[q]||'')}</textarea></div>`).join('')}</div></div>
   <button class="lnk" data-act="carry">Passar o que ficou por fazer para a semana seguinte</button>`}
 
+function areaEv(k){const r=[];Object.values(S.posts).forEach(x=>{if(x.date===k&&x.status!=='Ideia')r.push(`Conteúdo · ${x.fmt?x.fmt+': ':''}${x.title}`)});Object.values(S.areas).forEach(a=>(a.items||[]).forEach(x=>{if(x.meet===k)r.push(`${a.name.split(' ')[0]} · Reunião ${x.name}`);if(x.due===k&&x.status!=='Concluído')r.push(`${a.name.split(' ')[0]} · Prazo: ${x.name}`)}));return r.map(x=>`<span style="color:var(--br);font-weight:600">${esc(x)}</span><br>`).join('')}
 /* ---------- HÁBITOS ---------- */
 function streak(id,k){let d=parse(k);if(!isDone(id,k))d=addD(d,-1);let n=0;while(isDone(id,key(d))&&n<999){n++;d=addD(d,-1)}return n}
 function recent(id,k,n){for(let i=1;i<=n;i++)if(isDone(id,key(addD(parse(k),-i))))return true;return false}
@@ -423,18 +428,65 @@ function planSec(id,c){const t=key(today()),ts=(c.tasks||[]).slice().sort((a,b)=
   <div class="grid3" style="margin-top:8px"><input type="date" data-draft="std" value="${S.draft.std?dv('std'):t}" aria-label="Data" style="grid-column:span 2">
   <select data-draft="sty" aria-label="Tipo">${STYPES.map(x=>`<option ${(S.draft.sty||'Matéria')===x?'selected':''}>${x}</option>`).join('')}</select></div>
   <button class="go" data-act="stadd">Adicionar ao plano</button></div></div>`}
+/* ---------- CONTEÚDO ---------- */
+const CST=['Ideia','A preparar','Agendado','Publicado'],CFMT=['Vlog','Reel','TikTok','Carrossel','Story','Post'],CSER=['Vlog do dia','Highlights da semana','Recomendações do mês','Dress code'];
+function postCard(id,x){const pill=v=>v?`<span class="pill">${esc(v)}</span>`:'';
+  return `<details class="card ic" ${S.open===id?'open':''} data-o="${esc(id)}"><summary><b>${esc(x.title||'Sem título')}</b>${pill(x.fmt)}${pill(x.series)}${x.date?`<span class="pill">${short(x.date)}</span>`:''}</summary>
+  <input class="ttl" data-f="po" data-i="${esc(id)}" data-k="title" value="${esc(x.title||'')}" aria-label="Título">
+  <label class="l">Estado</label><select data-f="po" data-i="${esc(id)}" data-k="status">${CST.map(v=>`<option ${x.status===v?'selected':''}>${v}</option>`).join('')}</select>
+  <label class="l">Formato</label><div class="row">${CFMT.map(v=>`<button class="chip ${x.fmt===v?'on':''}" data-act="pfmt" data-i="${esc(id)}" data-v="${v}">${v}</button>`).join('')}</div>
+  <label class="l">Série</label><input list="cser" data-f="po" data-i="${esc(id)}" data-k="series" value="${esc(x.series||'')}" placeholder="Ex.: Highlights da semana">
+  <label class="l">Data de publicação</label><input type="date" data-f="po" data-i="${esc(id)}" data-k="date" value="${esc(x.date||'')}">
+  <label class="l">Guião, legenda e notas</label><textarea data-f="po" data-i="${esc(id)}" data-k="notes" placeholder="Planos a gravar, música, legenda, hashtags">${esc(x.notes||'')}</textarea>
+  <button class="lnk" data-act="pdel2" data-i="${esc(id)}">Apagar</button></details>`}
+function vConteudo(){
+  const all=Object.entries(S.posts),ym=key(today()).slice(0,7);
+  const pub=all.filter(([,x])=>x.status==='Publicado'&&String(x.date||'').startsWith(ym)).length;
+  const next=all.filter(([,x])=>x.status==='Agendado'&&x.date>=key(today())).sort((a,b)=>a[1].date.localeCompare(b[1].date))[0];
+  return `<div class="narrow"><h1>Conteúdo</h1>
+  <div class="two" style="margin:0 0 26px"><div><small>Ideias guardadas</small><b>${all.filter(([,x])=>x.status==='Ideia').length}</b></div><div><small>Publicados este mês</small><b>${pub}</b></div></div>
+  ${next?`<p class="ins" style="margin:-10px 0 26px">Próximo: <b>${esc(next[1].title)}</b> · ${short(next[1].date)} (${until(next[1].date)})</p>`:''}
+  <input class="addt blk" data-add="post" data-draft="add-post" value="${dv('add-post')}" placeholder="+ Nova ideia (Enter)">
+  <datalist id="cser">${CSER.map(v=>`<option value="${v}">`).join('')}</datalist>
+  ${CST.map(st=>{const g=all.filter(([,x])=>(x.status||'Ideia')===st).sort((a,b)=>(a[1].date||'9').localeCompare(b[1].date||'9'));
+    if(!g.length)return '';const inner=g.map(([id,x])=>postCard(id,x)).join('');
+    return st==='Publicado'?`<details class="blk" style="border:0;padding:0"><summary><b>Publicado</b> (${g.length})</summary>${inner}</details>`:`<div class="blk"><h2>${st} <span class="muted" style="font-size:14px">${g.length}</span></h2>${inner}</div>`}).join('')||'<p class="empty">Escreve a tua primeira ideia acima.</p>'}</div>`}
 /* ---------- ÁREAS ---------- */
+const PST=['Em curso','Ideia','Em pausa','Concluído'];
+function itemCard(x,je){const f=(k,l,ta)=>`<label class="l">${l}</label>${ta?`<textarea class="sm" data-f="ai" data-i="${esc(x.id)}" data-k="${k}">${esc(x[k]||'')}</textarea>`:`<input data-f="ai" data-i="${esc(x.id)}" data-k="${k}" value="${esc(x[k]||'')}">`}`;
+  const d=je?x.meet:x.due,sub=x.next||x.where||'';
+  return `<details class="card ic" ${S.open===x.id?'open':''} data-o="${esc(x.id)}"><summary><b>${esc(x.name||'Sem nome')}</b>${d?`<span class="pill">${je?'Reunião':'Prazo'} ${short(d)}</span>`:''}${sub?`<small>${esc(sub)}</small>`:''}</summary>
+  <input class="ttl" data-f="ai" data-i="${esc(x.id)}" data-k="name" value="${esc(x.name||'')}" aria-label="Nome">
+  ${je?f('where','Onde está',1)+f('next','Próximo passo',1)+f('need','Precisa de mim')+`<label class="l">Próxima reunião</label><input type="date" data-f="ai" data-i="${esc(x.id)}" data-k="meet" value="${esc(x.meet||'')}">`
+  :`<label class="l">Estado</label><select data-f="ai" data-i="${esc(x.id)}" data-k="status">${PST.map(v=>`<option ${(x.status||'Em curso')===v?'selected':''}>${v}</option>`).join('')}</select>`+f('next','Próximo passo',1)+`<label class="l">Prazo</label><input type="date" data-f="ai" data-i="${esc(x.id)}" data-k="due" value="${esc(x.due||'')}">`+f('notes','Notas',1)}
+  <button class="lnk" data-act="aidel" data-i="${esc(x.id)}">Apagar</button></details>`}
 function vAreas(){
   const list=Object.entries(S.areas).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
-  return `<div class="narrow"><h1>Áreas</h1>${list.map(([id,a])=>`<div class="card blk"><h3>${esc(a.name)}</h3><textarea data-f="anote" data-id="${esc(id)}" placeholder="Contactos, ideias, próximos passos">${esc(a.notes||'')}</textarea>
-   <button class="lnk" data-act="adel" data-id="${esc(id)}">Remover área</button></div>`).join('')||'<p class="empty">Ainda sem áreas.</p>'}
-  <input class="addt" data-add="area" data-draft="add-area" value="${dv('add-area')}" placeholder="+ Nova área (Enter)">
+  if(!S.area||!S.areas[S.area])S.area=list.length?list[0][0]:null;
+  const a=S.area&&S.areas[S.area],je=a&&a.kind==='je',items=(a&&a.items)||[],t=key(today());
+  let body='';
+  if(a){
+    const grp=je?[['',items]]:PST.map(st=>[st,items.filter(x=>(x.status||'Em curso')===st)]);
+    body=`${a.tagline?`<p class="muted" style="margin:-6px 0 22px">${esc(a.tagline)}</p>`:''}
+    <div class="blk"><h2>${je?'JIs que acompanho':'Projetos'}</h2>
+    ${grp.map(([st,g])=>g.length?(st?(st==='Concluído'?`<details style="border:0;padding:0"><summary>Concluídos (${g.length})</summary>`:`<p class="sec">${st}</p>`):'')+g.map(x=>itemCard(x,je)).join('')+(st==='Concluído'?'</details>':''):'').join('')||'<p class="empty">Ainda nada aqui.</p>'}
+    <input class="addt" data-add="item" data-draft="add-item" value="${dv('add-item')}" placeholder="${je?'+ Nova JI (Enter)':'+ Novo projeto (Enter)'}"></div>
+    <div class="blk"><h2>Notas de reuniões</h2>
+    <div class="card"><input type="date" data-draft="mdate" value="${S.draft.mdate?dv('mdate'):t}" aria-label="Data"><textarea style="margin-top:8px" data-draft="mtext" placeholder="O que se falou, decisões, next steps">${dv('mtext')}</textarea><button class="go" data-act="madd">Guardar nota</button></div>
+    ${(a.meetings||[]).slice().sort((x,y)=>(y.date||'').localeCompare(x.date||'')).map(m=>`<div class="li"><div><small>${esc(m.date?short(m.date):'')}</small><span style="white-space:pre-wrap">${esc(m.text)}</span></div><button class="x" data-act="mdel" data-i="${esc(m.id)}" aria-label="Apagar">×</button></div>`).join('')}</div>
+    <div class="blk"><h2>Links</h2>${(a.links||[]).map(l=>`<div class="li"><div><a href="${esc(l.u)}" target="_blank" rel="noopener">${esc(l.t||l.u)}</a></div><button class="x" data-act="ldel" data-i="${esc(l.id)}" aria-label="Apagar">×</button></div>`).join('')}
+    <div class="grid3" style="margin-top:10px"><input data-draft="ltit" value="${dv('ltit')}" placeholder="Nome"><input style="grid-column:span 2" data-draft="lurl" value="${dv('lurl')}" placeholder="https://…" inputmode="url"></div><button class="lnk" data-act="ladd">+ Adicionar link</button></div>
+    <div class="blk"><h2>Notas</h2><textarea data-f="anote" data-id="${esc(S.area)}" placeholder="Rotina, ideias, contactos">${esc(a.notes||'')}</textarea></div>
+    <button class="lnk" data-act="adel" data-id="${esc(S.area)}">Remover esta área</button>`}
+  return `<div class="narrow"><h1>Áreas</h1>
+  <div class="row blk">${list.map(([id,x])=>`<button class="chip ${id===S.area?'on':''}" data-act="asel" data-v="${esc(id)}">${esc(x.name)}</button>`).join('')}</div>
+  ${body||'<p class="empty">Ainda sem áreas.</p>'}
+  <input class="addt" style="margin-top:20px" data-add="area" data-draft="add-area" value="${dv('add-area')}" placeholder="+ Nova área (Enter)">
   <div class="blk" style="margin-top:40px"><h2>Cópia de segurança</h2><p class="muted">Os teus dados ficam guardados neste telemóvel. Faz uma cópia de vez em quando e guarda-a no Ficheiros ou no iCloud.</p>
   <button class="go" data-act="export">Fazer cópia de segurança</button>
-  <label class="l" for="imp">Restaurar a partir de uma cópia</label><input id="imp" type="file"></div></div>`}
-
+  <label class="l" for="imp">Carregar dados de um ficheiro</label><input id="imp" type="file"></div></div>`}
 /* ---------- RENDER ---------- */
-const VIEWS={semana:vSemana,habitos:vHabitos,treinos:vTreinos,financas:vFinancas,leituras:vLeituras,cadeiras:vCadeiras,areas:vAreas};
+const VIEWS={semana:vSemana,habitos:vHabitos,treinos:vTreinos,financas:vFinancas,leituras:vLeituras,conteudo:vConteudo,cadeiras:vCadeiras,areas:vAreas};
 const route=()=>{const h=location.hash.slice(1);return VIEWS[h]?h:'semana'};
 let pending=false;
 const editing=()=>{const a=document.activeElement;return a&&app.contains(a)&&(a.tagName==='TEXTAREA'||a.tagName==='SELECT'||(a.tagName==='INPUT'&&a.type!=='button'))};
@@ -452,20 +504,25 @@ addEventListener('hashchange',()=>{S.course=null;render(1);scrollTo(0,0)});
 function addItem(kind,v){
   if(kind==='habit')saveSettings({habits:[...habits(),{id:'h'+uid(),name:v}]});
   else if(kind==='course')put('courses','c'+uid(),{name:v,goal:'',prof:'',evals:[],program:[],notes:''});
-  else if(kind==='area')put('areas','a'+uid(),{name:v,notes:'',order:Object.keys(S.areas).length+1});
+  else if(kind==='area'){const nid='a'+uid();put('areas',nid,{name:v,kind:'projects',items:[],meetings:[],links:[],notes:'',order:Object.keys(S.areas).length+1});S.area=nid}
+  else if(kind==='post'){const pid='p'+uid();put('posts',pid,{title:v,status:'Ideia',fmt:'',series:'',date:'',notes:''})}
+  else if(kind==='item'){const a=clone(S.areas[S.area]);a.items=[...(a.items||[]),{id:'i'+uid(),name:v,status:'Em curso'}];put('areas',S.area,a)}
   else if(kind==='topic'){const c=clone(S.courses[S.course]);let sec=S.draft.psec||((c.program||[]).slice(-1)[0]||{}).sec||'Programa';
     if(sec==='Nova secção…'){sec=v;S.draft.psec=v;put('courses',S.course,c);toast('Secção criada. Agora escreve os temas.');return}
     c.program=[...(c.program||[]),{id:'p'+uid(),sec,t:v,done:false}];put('courses',S.course,c)}
   else{const L=getList(kind);L.list.push({id:'t'+uid(),t:v,done:false});L.save()}
 }
+app.addEventListener('toggle',e=>{const d=e.target;if(d.dataset&&d.dataset.o){if(d.open)S.open=d.dataset.o;else if(S.open===d.dataset.o)S.open=null}},true);
 app.addEventListener('keydown',e=>{const el=e.target.closest('[data-add]');if(!el||e.key!=='Enter')return;e.preventDefault();const v=el.value.trim();if(!v)return;S.draft[el.dataset.draft]='';addItem(el.dataset.add,v);render(1)});
 app.addEventListener('input',e=>{const el=e.target;if(el.dataset.draft)S.draft[el.dataset.draft]=el.value});
-app.addEventListener('change',e=>{const el=e.target,f=el.dataset.f,v=el.value;if(el.dataset.draft)S.draft[el.dataset.draft]=v;if(el.tagName==='SELECT')render(1);if(!f)return;
+app.addEventListener('change',e=>{const el=e.target,f=el.dataset.f,v=el.value;if(el.dataset.draft)S.draft[el.dataset.draft]=v;if(el.tagName==='SELECT'&&!f)render(1);if(!f)return;
   if(f==='refl'){const mk=key(S.wk),w=W(mk);w.refl[el.dataset.k]=v;put('weeks',mk,{...w,week:mk})}
   else if(f==='win'){const k=key(S.sel);S.days[k]={...day(k),vitoria:v.trim(),date:k};write('days/'+k,S.days[k])}
   else if(f==='routine'){const r=[...settings().routine];r[+el.dataset.i]=v.trim();saveSettings({routine:r})}
   else if(f==='budget'){const b=num(v);saveSettings({budget:b>0?Math.round(b*100)/100:0})}
   else if(f==='rnote'){const r=clone(S.reads[el.dataset.id]);r.notes=v;put('reads',el.dataset.id,r)}
+  else if(f==='po'){const x=clone(S.posts[el.dataset.i]);x[el.dataset.k]=v;S.open=el.dataset.i;put('posts',el.dataset.i,x);if(el.type==='date'||el.tagName==='SELECT')setTimeout(()=>{if(!editing())render(1);else pending=true},0)}
+  else if(f==='ai'){S.open=el.dataset.i;const a=clone(S.areas[S.area]),x=(a.items||[]).find(y=>y.id===el.dataset.i);if(!x)return;x[el.dataset.k]=v;put('areas',S.area,a);if(el.type==='date'||el.tagName==='SELECT')setTimeout(()=>{if(!editing())render(1);else pending=true},0)}
   else if(f==='anote'){const a=clone(S.areas[el.dataset.id]);a.notes=v;put('areas',el.dataset.id,a)}
   else if(f==='cnote'||f==='cf'){const c=clone(S.courses[S.course]);c[f==='cnote'?'notes':el.dataset.k]=v.trim();put('courses',S.course,c)}
   else if(f==='ev'){const c=clone(S.courses[S.course]),e=(c.evals||[]).find(x=>x.id===el.dataset.e);if(!e)return;const k=el.dataset.k;
@@ -518,12 +575,21 @@ app.addEventListener('click',e=>{
     c.tasks=[...(c.tasks||[]),{id:'s'+uid(),t:tx,date:S.draft.std||key(today()),type:S.draft.sty||'Matéria',done:false}];put('courses',S.course,c);S.draft.stt='';toast('Adicionada ao plano')}
   else if(A==='export'){const o={settings:S.settings};COLS.forEach(c=>o[c]=S[c]);const bl=new Blob([JSON.stringify(o)],{type:'application/json'}),a=document.createElement('a');
     a.href=URL.createObjectURL(bl);a.download='mylife-'+key(today())+'.json';document.body.appendChild(a);a.click();a.remove();toast('Cópia de segurança criada')}
+  else if(A==='asel')S.area=v;
+  else if(A==='pfmt'){const x=clone(S.posts[b.dataset.i]);x.fmt=x.fmt===v?'':v;S.open=b.dataset.i;put('posts',b.dataset.i,x)}
+  else if(A==='pdel2'){const pid=b.dataset.i,old=S.posts[pid];del('posts',pid);render(1);toast('Apagado',()=>put('posts',pid,old));return}
+  else if(A==='ast'){const a=clone(S.areas[S.area]),x=(a.items||[]).find(y=>y.id===b.dataset.i);if(x){x.status=v;put('areas',S.area,a)}}
+  else if(A==='aidel'){const old=clone(S.areas[S.area]),aid=S.area,a=clone(old);a.items=(a.items||[]).filter(y=>y.id!==b.dataset.i);put('areas',aid,a);render(1);toast('Apagado',()=>put('areas',aid,old));return}
+  else if(A==='madd'){const tx=(S.draft.mtext||'').trim();if(!tx){toast('Escreve a nota.');return}const a=clone(S.areas[S.area]);a.meetings=[...(a.meetings||[]),{id:'m'+uid(),date:S.draft.mdate||key(today()),text:tx}];put('areas',S.area,a);S.draft.mtext='';toast('Nota guardada')}
+  else if(A==='mdel'){const a=clone(S.areas[S.area]);a.meetings=(a.meetings||[]).filter(y=>y.id!==b.dataset.i);put('areas',S.area,a)}
+  else if(A==='ladd'){let u=(S.draft.lurl||'').trim();if(!u){toast('Cola o link.');return}if(!/^https?:\/\//i.test(u))u='https://'+u;const a=clone(S.areas[S.area]);a.links=[...(a.links||[]),{id:'l'+uid(),t:(S.draft.ltit||'').trim(),u}];put('areas',S.area,a);S.draft.ltit='';S.draft.lurl=''}
+  else if(A==='ldel'){const a=clone(S.areas[S.area]);a.links=(a.links||[]).filter(y=>y.id!==b.dataset.i);put('areas',S.area,a)}
   else if(A==='adel'){const old=S.areas[id];del('areas',id);render(1);toast('Área removida',()=>put('areas',id,old));return}
   render(1);
 });
 
 app.addEventListener('change',e=>{if(!(e.target.id==='imp'||e.target.classList.contains('impf'))||!e.target.files[0])return;const f=e.target.files[0];f.text().then(t=>{const o=JSON.parse(t);
-  if(!o||typeof o!=='object'||!(o.courses||o.weeks||o.settings))throw 0;S.settings=o.settings||null;COLS.forEach(c=>S[c]=o[c]||{});saveLocal();render(1);toast('Dados restaurados')}).catch(()=>toast('Este ficheiro não é uma cópia válida.'))});
+  if(!o||typeof o!=='object'||!(o.courses||o.weeks||o.settings))throw 0;if(o.settings)S.settings=o.settings;COLS.forEach(c=>{if(o[c])S[c]={...S[c],...o[c]}});saveLocal();render(1);toast('Dados carregados')}).catch(()=>toast('Este ficheiro não é uma cópia válida.'))});
 loadLocal();
 render(1);
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
