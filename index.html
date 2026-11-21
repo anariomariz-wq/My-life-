@@ -168,6 +168,13 @@ h1{color:var(--ink)!important;font-weight:600}
 .ring circle+circle{stroke:#2383e2}.dot.on{background:#2383e2;border-color:#2383e2}
 .wkrow .ok{color:var(--ink)}
 .load{border-radius:8px;text-decoration:none}
+.cover{height:clamp(130px,28vw,220px);margin:-18px -16px 0;background:linear-gradient(135deg,#efe5d6,#e4d3bd 55%,#d9c4a8);background-size:cover;background-position:center;position:relative}
+.cbtn{position:absolute;right:12px;bottom:10px;background:rgba(255,255,255,.85);color:#37352f;font-size:13px;padding:6px 10px;border-radius:6px;cursor:pointer}
+.cbtn input,.picon input{display:none}
+.picon{display:inline-grid;place-items:center;width:84px;height:84px;margin-top:-42px;position:relative;border-radius:14px;background:#efe5d6;border:3px solid var(--bg);cursor:pointer;overflow:hidden}
+.picon span{font-size:30px;font-weight:600;color:#8a5a44}.picon img{width:100%;height:100%;object-fit:cover}
+.quote{resize:none;overflow:hidden;width:100%;border:0;padding:0 0 4px;min-height:0;color:var(--mute);font-style:italic;font-size:15px;margin:-10px 0 22px;background:transparent}
+@media(min-width:1132px){.cover{margin:-18px calc((1100px - 100vw)/2 + 0px) 0;}}
 .card.hoje{border:1px solid var(--br);background:var(--brs)}.card.hoje h2{font-size:20px}
 .ic summary{list-style:none;cursor:pointer;color:var(--ink);display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;min-height:28px}.ic summary::-webkit-details-marker{display:none}.ic summary small{flex-basis:100%;color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ic[open] summary{margin-bottom:6px}.ic .pill{cursor:inherit;min-height:0;padding:1px 8px;font-size:12px}
 .ihd{display:flex;gap:6px;align-items:center}.ttl{font-weight:600;font-size:18px;border:0;padding:4px 0;min-height:36px;background:transparent}
@@ -224,7 +231,7 @@ const put=(c,id,o)=>{S[c][id]=o;write(c+'/'+id,o)};
 const del=(c,id)=>{delete S[c][id];write(c+'/'+id,null)};
 const clone=o=>JSON.parse(JSON.stringify(o||{}));
 const habits=()=>(S.settings&&Array.isArray(S.settings.habits)&&S.settings.habits.length)?S.settings.habits:DEF_H;
-const settings=()=>({habits:habits(),budget:(S.settings&&S.settings.budget)||0,routine:(S.settings&&S.settings.routine)||DEF_R});
+const settings=()=>({...(S.settings||{}),habits:habits(),budget:(S.settings&&S.settings.budget)||0,routine:(S.settings&&S.settings.routine)||DEF_R});
 const saveSettings=p=>{S.settings={...settings(),...p};write('config/settings',S.settings)};
 const day=k=>S.days[k]||{};
 const isDone=(id,k)=>!!(day(k).done||{})[id];
@@ -263,7 +270,10 @@ function vSemana(){
   const evs=allEvals();
   const lbl=S.wk.getMonth()===end.getMonth()?`${S.wk.getDate()}–${short(key(end))}`:`${short(mk)} – ${short(key(end))}`;
   const fresh=!Object.keys(S.courses).length;
-  return `<h1>A minha semana</h1>${fresh?loadBtn():''}
+  const cv=st.cover,ic=st.icon,qt=st.quote??'Não é “tenho de fazer isto”, mas sim “eu escolho fazer isto”';
+  return `<div class="cover" style="${cv?`background-image:url(${cv})`:''}"><label class="cbtn">Mudar capa<input type="file" accept="image/*" class="imgin" data-k="cover"></label></div>
+  <label class="picon">${ic?`<img src="${ic}" alt="">`:'<span>ML</span>'}<input type="file" accept="image/*" class="imgin" data-k="icon"></label>
+  <h1 style="margin-top:8px">A minha semana</h1><textarea class="quote" rows="2" data-f="quote" aria-label="Frase">${esc(qt)}</textarea>${fresh?loadBtn():''}
   <div class="tiles">
    <a class="tile c-hab" href="#habitos"><small>Hábitos hoje</small><div class="big">${hn}/${hs.length}</div></a>
    <a class="tile c-tre" href="#treinos"><small>Treinos esta semana</small><div class="big">${wo}</div></a>
@@ -531,12 +541,18 @@ function addItem(kind,v){
   else{const L=getList(kind);L.list.push({id:'t'+uid(),t:v,done:false});L.save()}
 }
 app.addEventListener('toggle',e=>{const d=e.target;if(d.dataset&&d.dataset.o){if(d.open)S.open=d.dataset.o;else if(S.open===d.dataset.o)S.open=null}},true);
+app.addEventListener('change',e=>{const el=e.target;if(!el.classList.contains('imgin')||!el.files[0])return;const k=el.dataset.k,img=new Image(),u=URL.createObjectURL(el.files[0]);
+  img.onload=()=>{const W2=k==='cover'?1400:240,H2=k==='cover'?560:240,c=document.createElement('canvas');c.width=W2;c.height=H2;const x=c.getContext('2d');
+    const r=Math.max(W2/img.width,H2/img.height),w=img.width*r,h=img.height*r;x.drawImage(img,(W2-w)/2,(H2-h)/2,w,h);
+    try{saveSettings({[k]:c.toDataURL('image/jpeg',.82)});saveLocal();render(1)}catch(err){toast('A imagem é demasiado grande.')}URL.revokeObjectURL(u)};
+  img.onerror=()=>toast('Não consegui abrir esta imagem.');img.src=u});
 app.addEventListener('keydown',e=>{const el=e.target.closest('[data-add]');if(!el||e.key!=='Enter')return;e.preventDefault();const v=el.value.trim();if(!v)return;S.draft[el.dataset.draft]='';addItem(el.dataset.add,v);render(1)});
 app.addEventListener('input',e=>{const el=e.target;if(el.dataset.draft)S.draft[el.dataset.draft]=el.value});
 app.addEventListener('change',e=>{const el=e.target,f=el.dataset.f,v=el.value;if(el.dataset.draft)S.draft[el.dataset.draft]=v;if(el.tagName==='SELECT'&&!f)render(1);if(!f)return;
   if(f==='refl'){const mk=key(S.wk),w=W(mk);w.refl[el.dataset.k]=v;put('weeks',mk,{...w,week:mk})}
   else if(f==='win'){const k=key(S.sel);S.days[k]={...day(k),vitoria:v.trim(),date:k};write('days/'+k,S.days[k])}
   else if(f==='routine'){const r=[...settings().routine];r[+el.dataset.i]=v.trim();saveSettings({routine:r})}
+  else if(f==='quote')saveSettings({quote:v.trim()});
   else if(f==='budget'){const b=num(v);saveSettings({budget:b>0?Math.round(b*100)/100:0})}
   else if(f==='rnote'){const r=clone(S.reads[el.dataset.id]);r.notes=v;put('reads',el.dataset.id,r)}
   else if(f==='po'){const x=clone(S.posts[el.dataset.i]);x[el.dataset.k]=v;S.open=el.dataset.i;put('posts',el.dataset.i,x);if(el.type==='date'||el.tagName==='SELECT')setTimeout(()=>{if(!editing())render(1);else pending=true},0)}
