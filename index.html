@@ -168,6 +168,7 @@ h1{color:var(--ink)!important;font-weight:600}
 .ring circle+circle{stroke:#2383e2}.dot.on{background:#2383e2;border-color:#2383e2}
 .wkrow .ok{color:var(--ink)}
 .load{border-radius:8px}
+.card.hoje{border:1px solid var(--br);background:var(--brs)}.card.hoje h2{font-size:20px}
 .ic summary{list-style:none;cursor:pointer;color:var(--ink);display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;min-height:28px}.ic summary::-webkit-details-marker{display:none}.ic summary small{flex-basis:100%;color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ic[open] summary{margin-bottom:6px}.ic .pill{cursor:inherit;min-height:0;padding:1px 8px;font-size:12px}
 .ihd{display:flex;gap:6px;align-items:center}.ttl{font-weight:600;font-size:18px;border:0;padding:4px 0;min-height:36px;background:transparent}
 textarea.sm{min-height:56px}
@@ -241,6 +242,11 @@ function getList(d){if(d.startsWith('a:')){const a=clone(S.areas[d.slice(2)]);a.
   const mk=key(S.wk),w=W(mk);return{obj:w,list:d==='p'?w.prio:w.days[d],save:()=>put('weeks',mk,{...w,week:mk})}}
 
 /* ---------- SEMANA ---------- */
+function hojeBlk(){const t=key(today()),mk=key(monday(today())),w=W(mk),i=(today().getDay()+6)%7,mine=w.days['d'+i]||[],st=studyOn(t),ev=areaEv(t);
+  const left=mine.filter(x=>!x.done).length+st.filter(x=>!x.done).length;
+  return `<div class="card blk hoje"><h2>Hoje · ${DN[i]} ${today().getDate()}</h2><p class="muted" style="margin:-6px 0 8px">${left?left+(left===1?' coisa por fazer':' coisas por fazer'):'Nada pendente para hoje.'}</p>${ev}
+  ${mine.length?mine.map(x=>`<div class="tk ${x.done?'on':''}"><button class="cb" data-act="tth" data-id="${esc(x.id)}" aria-label="Feito"></button><span>${esc(x.t)}</span></div>`).join(''):''}
+  ${st.map(x=>studyRow(x,x.cid,x.short)).join('')}</div>`}
 const CC=[['#9f6b53','#f4eeee'],['#d9730d','#fbecdd'],['#cb912f','#fbf3db'],['#448361','#edf3ec'],['#337ea9','#e7f3f8'],['#9065b0','#f6f3f9'],['#c14c8a','#faf1f5'],['#d44c47','#fdebec']];
 function cpair(cid){const ids=Object.keys(S.courses).sort();const i=ids.indexOf(cid);return CC[(i<0?0:i)%CC.length]}
 const ccol=cid=>cpair(cid)[0],cbg=cid=>cpair(cid)[1];
@@ -264,6 +270,7 @@ function vSemana(){
    <a class="tile c-fin" href="#financas"><small>Gasto este mês</small><div class="big">${eur.format(sp)}</div>${st.budget?`<span>de ${eur.format(st.budget)}</span>`:''}</a>
    <a class="tile c-cad" href="#cadeiras"><small>Próxima avaliação</small>${nx?`<div class="big">${until(nx.date)}</div><span>${esc(nx.name)} · ${esc(nx.course)}</span>`:'<div class="big">—</div>'}</a>
   </div>
+  ${hojeBlk()}
   <div class="nav"><button class="ib" data-act="wk" data-n="-7" aria-label="Semana anterior">‹</button><b>Semana de ${lbl}</b><button class="ib" data-act="wk" data-n="7" aria-label="Semana seguinte">›</button></div>
   <div class="blk card prio"><h2>Prioridades da semana</h2>${tasks(w.prio,'p')}</div>
   <div class="blk days">${DN.map((n,i)=>{const dd=addD(S.wk,i),k=key(dd),e=evs.filter(x=>x.date===k);
@@ -534,6 +541,7 @@ app.addEventListener('click',e=>{
   else if(A==='tt'||A==='tdel'){const L=getList(b.dataset.d),i=L.list.findIndex(x=>x.id===id);if(i<0)return;
     if(A==='tt')L.list[i].done=!L.list[i].done;else{const old=clone(L.obj),d=b.dataset.d;L.list.splice(i,1);L.save();render(1);
       toast('Tarefa apagada',()=>{if(d.startsWith('a:'))put('areas',d.slice(2),old);else put('weeks',key(S.wk),old)});return}L.save()}
+  else if(A==='tth'){const mk=key(monday(today())),w=W(mk),i=(today().getDay()+6)%7,x=w.days['d'+i].find(y=>y.id===id);if(x){x.done=!x.done;put('weeks',mk,{...w,week:mk})}}
   else if(A==='carry'){const w=W(key(S.wk)),nk=key(addD(S.wk,7)),nw=W(nk),have=new Set(nw.prio.map(x=>x.t));let c=0;
     [...w.prio,...Object.values(w.days).flat()].filter(x=>!x.done&&!have.has(x.t)).forEach(x=>{have.add(x.t);nw.prio.push({id:'t'+uid(),t:x.t,done:false});c++});
     put('weeks',nk,{...nw,week:nk});toast(c?`${c} ${c===1?'tarefa passou':'tarefas passaram'} para as prioridades da semana seguinte`:'Não há nada pendente.')}

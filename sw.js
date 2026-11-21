@@ -1,4 +1,4 @@
-const C='mylife-v8';const F=['./','index.html','manifest.webmanifest','ml-bege-180.png','ml-bege-192.png','ml-bege-512.png'];
+const C='mylife-v9';const F=['./','index.html','manifest.webmanifest','ml-bege-180.png','ml-bege-192.png','ml-bege-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F)));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
