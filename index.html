@@ -225,7 +225,40 @@ COLS.forEach(c=>S[c]={});
 const LS='mylife-v2';
 function loadLocal(){try{const j=JSON.parse(localStorage.getItem(LS)||'{}');S.settings=j.settings||null;COLS.forEach(c=>S[c]=j[c]||{})}catch(e){}}
 function saveLocal(){try{const o={settings:S.settings};COLS.forEach(c=>o[c]=S[c]);localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
-let sT;function write(){clearTimeout(sT);sT=setTimeout(saveLocal,150)}
+let sT;function write(path){clearTimeout(sT);sT=setTimeout(saveLocal,150);if(path)SY.mark(path)}
+/* ---------- SYNC (Supabase) ---------- */
+const SB_URL='__SB_URL__',SB_KEY='__SB_KEY__',ML='mylife-sync';
+const SY={m:{ts:{},dirty:{},since:0,ses:null,last:0},busy:false,t:null,
+  load(){try{Object.assign(this.m,JSON.parse(localStorage.getItem(ML)||'{}'))}catch(e){}},
+  save(){try{localStorage.setItem(ML,JSON.stringify(this.m))}catch(e){}},
+  on(){return SB_URL.startsWith('http')&&!!this.m.ses},
+  mark(path){const n=Date.now();this.m.ts[path]=n;this.m.dirty[path]=n;this.save();clearTimeout(this.t);this.t=setTimeout(()=>this.run(),1500)},
+  get(path){if(path==='config/settings')return S.settings||null;const[c,id]=path.split('/');return S[c]&&S[c][id]!==undefined?S[c][id]:null},
+  setv(path,v){if(path==='config/settings'){S.settings=v;return}const[c,id]=path.split('/');if(!S[c])return;if(v==null)delete S[c][id];else S[c][id]=v},
+  async api(method,url,body,auth=true,extra={}){const h={apikey:SB_KEY,'Content-Type':'application/json',...extra};
+    if(auth){await this.fresh();h.Authorization='Bearer '+this.m.ses.access_token}
+    const r=await fetch(SB_URL+url,{method,headers:h,body:body?JSON.stringify(body):undefined});
+    const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+    if(!r.ok)throw new Error((j&&(j.msg||j.error_description||j.message||j.error))||('HTTP '+r.status));return j},
+  async fresh(){const s=this.m.ses;if(s&&s.expires_at&&Date.now()/1000<s.expires_at-60)return;
+    const j=await this.api('POST','/auth/v1/token?grant_type=refresh_token',{refresh_token:s.refresh_token},false);this.keep(j)},
+  keep(j){this.m.ses={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at||(Date.now()/1000+(j.expires_in||3600)),email:(j.user&&j.user.email)||(this.m.ses&&this.m.ses.email)};this.save()},
+  async login(email,pw,signup){if(signup){const j=await this.api('POST','/auth/v1/signup',{email,password:pw},false);if(!j||!j.access_token)return 'confirm';this.keep(j)}
+    else this.keep(await this.api('POST','/auth/v1/token?grant_type=password',{email,password:pw},false));
+    this.m.since=0;await this.pull(true);await this.push();return 'ok'},
+  logout(){this.m.ses=null;this.m.since=0;this.save()},
+  async pull(first){const rows=await this.api('GET','/rest/v1/docs?select=path,data,updated_at&updated_at=gt.'+(this.m.since||0)+'&order=updated_at.asc');
+    const seen=new Set();let ch=0;(rows||[]).forEach(r=>{seen.add(r.path);if(!this.m.ts[r.path]||r.updated_at>this.m.ts[r.path]){if(this.m.dirty[r.path]&&this.m.dirty[r.path]>r.updated_at)return;this.setv(r.path,r.data);this.m.ts[r.path]=r.updated_at;delete this.m.dirty[r.path];ch++}
+      this.m.since=Math.max(this.m.since,r.updated_at)});
+    if(first){const n=Date.now();const all=['config/settings'];COLS.forEach(c=>Object.keys(S[c]).forEach(id=>all.push(c+'/'+id)));all.forEach(p=>{if(!seen.has(p)&&this.get(p)!=null){this.m.ts[p]=n;this.m.dirty[p]=n}})}
+    this.save();if(ch){saveLocal();render()}},
+  async push(){const ps=Object.keys(this.m.dirty);if(!ps.length)return;
+    for(let i=0;i<ps.length;i+=50){const b=ps.slice(i,i+50).map(p=>({path:p,data:this.get(p),updated_at:this.m.dirty[p]}));
+      await this.api('POST','/rest/v1/docs?on_conflict=user_id,path',b,true,{Prefer:'resolution=merge-duplicates,return=minimal'});
+      b.forEach(r=>{if(this.m.dirty[r.path]===r.updated_at)delete this.m.dirty[r.path]})}this.save()},
+  async run(){if(!this.on()||this.busy||!navigator.onLine)return;this.busy=true;try{await this.push();await this.pull();this.m.last=Date.now();this.m.err='';this.save()}
+    catch(e){this.m.err=String(e.message||e);this.save();if(/refresh|JWT|invalid/i.test(this.m.err)&&/token/i.test(this.m.err)){}}finally{this.busy=false}}};
+SY.load();
 addEventListener('pagehide',saveLocal);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveLocal()});
 const put=(c,id,o)=>{S[c][id]=o;write(c+'/'+id,o)};
 const del=(c,id)=>{delete S[c][id];write(c+'/'+id,null)};
@@ -503,7 +536,13 @@ function vAreas(){
   <button class="go" data-act="export">Fazer cópia de segurança</button>
   <label class="l" for="imp">Carregar dados de um ficheiro</label><input id="imp" type="file"></div></div>`}
 /* ---------- DADOS ---------- */
-function vDados(){return `<div class="narrow"><h1>Os meus dados</h1>
+function syncCard(){if(!SB_URL.startsWith('http'))return '';
+  if(SY.on())return `<div class="card blk"><h2>Sincronização</h2><p class="muted">Ligada como <b>${esc(SY.m.ses.email||'')}</b>${SY.m.last?' · última vez às '+new Date(SY.m.last).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}${SY.m.err?'<br><span class="late">Erro: '+esc(SY.m.err)+'</span>':''}</p>
+   <button class="go" data-act="syncnow">Sincronizar agora</button><button class="lnk" data-act="logout">Sair</button></div>`;
+  return `<div class="card blk"><h2>Sincronizar iPhone e iPad</h2><p class="muted">Entra com o mesmo email e palavra-passe em todos os aparelhos.</p>
+   <input type="email" data-draft="sbe" value="${dv('sbe')}" placeholder="Email" autocomplete="email"><input style="margin-top:8px" type="password" data-draft="sbp" value="${dv('sbp')}" placeholder="Palavra-passe (mín. 6 caracteres)" autocomplete="current-password">
+   <button class="go" data-act="sblogin">Entrar</button><button class="lnk" data-act="sbsignup">Ainda não tenho conta — criar</button></div>`}
+function vDados(){return `<div class="narrow"><h1>Os meus dados</h1>${syncCard()}
   <div class="card blk"><h2>Passar para outro aparelho</h2><p class="muted">Copia o código com todos os teus dados e cola-o na app do outro aparelho (iPad ou iPhone), na caixa abaixo.</p>
   <button class="go" data-act="copycode">Copiar código dos meus dados</button></div>
   <div class="card blk"><h2>Colar código</h2><p class="muted">Copia o código que o Claude te enviou (começa por ML1:) e cola-o aqui.</p>
@@ -514,7 +553,7 @@ function vDados(){return `<div class="narrow"><h1>Os meus dados</h1>
 async function loadCode(txt){const m=String(txt).match(/ML1:([A-Za-z0-9+/=]+)/);let o;
   if(m){const bin=Uint8Array.from(atob(m[1]),c=>c.charCodeAt(0));const ds=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));o=JSON.parse(await new Response(ds).text())}
   else o=JSON.parse(txt);
-  if(!o||typeof o!=='object')throw 0;if(o.settings)S.settings=o.settings;COLS.forEach(c=>{if(o[c])S[c]={...S[c],...o[c]}});saveLocal()}
+  if(!o||typeof o!=='object')throw 0;if(o.settings){S.settings=o.settings;SY.mark('config/settings')}COLS.forEach(c=>{if(o[c]){S[c]={...S[c],...o[c]};Object.keys(o[c]).forEach(id=>SY.mark(c+'/'+id))}});saveLocal()}
 /* ---------- RENDER ---------- */
 const VIEWS={semana:vSemana,habitos:vHabitos,treinos:vTreinos,financas:vFinancas,leituras:vLeituras,dados:vDados,conteudo:vConteudo,cadeiras:vCadeiras,areas:vAreas};
 const route=()=>{const h=location.hash.slice(1);return VIEWS[h]?h:'semana'};
@@ -625,17 +664,22 @@ app.addEventListener('click',e=>{
     const gz=new Blob([JSON.stringify(o)]).stream().pipeThrough(new CompressionStream('gzip'));
     new Response(gz).arrayBuffer().then(buf=>{const u=new Uint8Array(buf);let bin='';for(let i=0;i<u.length;i+=8192)bin+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
       const code='ML1:'+btoa(bin);return navigator.clipboard.writeText(code).then(()=>toast('Código copiado. Cola-o no outro aparelho.'),()=>{S.draft.code=code;render(1);toast('Seleciona o código na caixa e copia-o.')})});return}
+  else if(A==='sblogin'||A==='sbsignup'){const em=(S.draft.sbe||'').trim(),pw=S.draft.sbp||'';if(!em||pw.length<6){toast('Escreve o email e uma palavra-passe com 6 ou mais caracteres.');return}
+    toast('A ligar…');SY.login(em,pw,A==='sbsignup').then(r=>{S.draft.sbp='';if(r==='confirm')toast('Conta criada. Abre o email de confirmação e depois toca em Entrar.');else{SY.m.last=Date.now();SY.save();toast('Sincronização ligada')}render(1)}).catch(e=>toast('Não deu: '+(e.message||e)));return}
+  else if(A==='syncnow'){toast('A sincronizar…');SY.run().then(()=>{render(1);toast(SY.m.err?'Erro: '+SY.m.err:'Tudo sincronizado')});return}
+  else if(A==='logout'){SY.logout();toast('Saíste da sincronização')}
   else if(A==='paste'){const v2=$('#code').value;loadCode(v2).then(()=>{S.draft.code='';location.hash='semana';render(1);toast('Dados carregados')}).catch(()=>toast('O código não está completo. Copia-o outra vez.'));return}
   else if(A==='adel'){const old=S.areas[id];del('areas',id);render(1);toast('Área removida',()=>put('areas',id,old));return}
   render(1);
 });
 
 app.addEventListener('change',e=>{if(!(e.target.id==='imp'||e.target.classList.contains('impf'))||!e.target.files[0])return;const f=e.target.files[0];f.text().then(t=>{const o=JSON.parse(t);
-  if(!o||typeof o!=='object'||!(o.courses||o.weeks||o.settings))throw 0;if(o.settings)S.settings=o.settings;COLS.forEach(c=>{if(o[c])S[c]={...S[c],...o[c]}});saveLocal();render(1);toast('Dados carregados')}).catch(()=>toast('Este ficheiro não é uma cópia válida.'))});
+  if(!o||typeof o!=='object'||!(o.courses||o.weeks||o.settings))throw 0;if(o.settings){S.settings=o.settings;SY.mark('config/settings')}COLS.forEach(c=>{if(o[c]){S[c]={...S[c],...o[c]};Object.keys(o[c]).forEach(id=>SY.mark(c+'/'+id))}});saveLocal();render(1);toast('Dados carregados')}).catch(()=>toast('Este ficheiro não é uma cópia válida.'))});
 loadLocal();
 render(1);
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+SY.run();setInterval(()=>{if(!document.hidden)SY.run()},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)SY.run()});addEventListener('online',()=>SY.run());
 setInterval(()=>{const t=key(today());if(t!==S._t){S._t=t;if(!editing())render(1)}},60000);S._t=key(today());
 }
 </script>
