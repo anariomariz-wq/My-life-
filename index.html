@@ -139,6 +139,38 @@ button.card{display:block;width:100%;text-align:left;cursor:pointer}
 #note{font-size:13px;color:var(--mute);text-align:center;margin-top:24px}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;display:flex;gap:14px;align-items:center;font-size:15px;max-width:calc(100% - 32px);z-index:9}
 #toast button{background:none;border:0;color:var(--bg);font-weight:600;text-decoration:underline;cursor:pointer;min-height:36px}
+
+/* Notion look */
+:root{--bg:light-dark(#ffffff,#191919);--ink:light-dark(#37352f,#d4d4d4);--mute:light-dark(#787774,#9b9b9b);--line:light-dark(#e9e9e7,#2f2f2f);
+--soft:light-dark(#f1f1ef,#252525);--acc:#2383e2;--accs:light-dark(#e7f3f8,#1f2a33);--out:light-dark(#d44c47,#e06a65);
+--br:light-dark(#9f6b53,#ba856f);--brs:light-dark(#f4eeee,#3a2a22);--gr:light-dark(#448361,#4dab9a);
+--sec:var(--br);--secs:var(--brs)}
+body[data-s]{--sec:var(--br);--secs:var(--brs)}
+body{font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+h1{color:var(--ink)!important;font-weight:600}
+.tabs a{color:var(--mute)}.tabs a.on{background:var(--soft)!important;color:var(--ink)!important;font-weight:600}
+.go{background:#2383e2!important;color:#fff!important;border-radius:8px}
+.chip{border-radius:8px}.chip.on{background:var(--brs)!important;border-color:var(--br)!important;color:var(--ink)!important}
+.seg .chip.on.o{background:light-dark(#fdebec,#3c2526)!important;border-color:var(--out)!important;color:var(--out)!important}
+.seg .chip.on.i{background:light-dark(#edf3ec,#1f302a)!important;border-color:var(--gr)!important;color:var(--gr)!important}
+.in{color:var(--gr)}
+.tile,.tile.c-hab,.tile.c-tre,.tile.c-fin,.tile.c-cad{background:var(--soft)!important;border-radius:8px}
+.tile .big,.tile.c-hab .big,.tile.c-tre .big,.tile.c-fin .big,.tile.c-cad .big{color:var(--ink)!important}
+.calc,.two div,.ins{background:var(--soft)!important;border-radius:8px}.ins{border-left:0!important}
+.day{border-radius:8px}.day h3{background:var(--brs);color:var(--ink);border-radius:4px;padding:3px 10px;font-family:inherit;font-weight:600;font-size:16px}
+.day h3 span{color:var(--mute)}
+.day.today{background:var(--bg);border-color:var(--br)!important}.day.today h3{background:var(--br);color:#fff}.day.today h3 span{color:#fff}
+.card,.card.prio{border-radius:8px}.card.prio{background:var(--bg);border:1px solid var(--line)}
+.card.prio h2{display:inline-block;background:var(--brs);border-radius:4px;padding:3px 10px;font-family:inherit;font-weight:600;font-size:16px}
+.cb,.hab .box{border-radius:3px;border-width:1.5px}.tk.on .cb,.hab.on .box{background:#2383e2;border-color:#2383e2}
+.hab{border-radius:8px}.hab.on{background:var(--accs)}
+.bar .t i,.vbars i{background:var(--br)}.bar.o .t i{background:var(--out)}
+.ring circle+circle{stroke:#2383e2}.dot.on{background:#2383e2;border-color:#2383e2}
+.wkrow .ok{color:var(--ink)}
+.load{border-radius:8px}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:0 6px;border-radius:4px;margin-right:6px}
+h2{font-weight:600}
+h1,h2,.card h3,.big{font-family:inherit!important}h1{font-weight:700;letter-spacing:-.01em}.card h3{font-weight:600;font-size:18px}.card h3 .tag{font-size:13px!important}
 @media(max-width:700px){.tiles{grid-template-columns:1fr 1fr}h1{font-size:30px}
  .ev{grid-template-columns:minmax(0,1fr) 64px 36px;grid-template-areas:"n w x" "d g g"}.ev .n{grid-area:n}.ev .w{grid-area:w}.ev .d{grid-area:d}.ev .g{grid-area:g}.ev .x{grid-area:x}.evh{display:none}
  .ev{padding-bottom:8px;border-bottom:1px solid var(--line)}}
@@ -205,11 +237,12 @@ function getList(d){if(d.startsWith('a:')){const a=clone(S.areas[d.slice(2)]);a.
   const mk=key(S.wk),w=W(mk);return{obj:w,list:d==='p'?w.prio:w.days[d],save:()=>put('weeks',mk,{...w,week:mk})}}
 
 /* ---------- SEMANA ---------- */
-const CC=['#6b4fa0','#b2473a','#2b5c9e','#2f6b45','#9a6512','#1f7a7a','#a23b72'];
-function ccol(cid){const ids=Object.keys(S.courses).sort();const i=ids.indexOf(cid);return CC[(i<0?0:i)%CC.length]}
+const CC=[['#9f6b53','#f4eeee'],['#d9730d','#fbecdd'],['#cb912f','#fbf3db'],['#448361','#edf3ec'],['#337ea9','#e7f3f8'],['#9065b0','#f6f3f9'],['#c14c8a','#faf1f5'],['#d44c47','#fdebec']];
+function cpair(cid){const ids=Object.keys(S.courses).sort();const i=ids.indexOf(cid);return CC[(i<0?0:i)%CC.length]}
+const ccol=cid=>cpair(cid)[0],cbg=cid=>cpair(cid)[1];
 const loadBtn=()=>`<label class="load">Carregar os meus dados (ficheiro mylife-dados.json)<input type="file" class="impf"></label>`;
 function studyOn(k){const r=[];Object.entries(S.courses).forEach(([cid,c])=>(c.tasks||[]).forEach(t=>{if(t.date===k)r.push({...t,cid,short:c.short||c.name.slice(0,3)})}));return r}
-function studyRow(t,cid,label){return `<div class="tk ${t.done?'on':''} ${t.type==='Avaliação'?'av':''}"><button class="cb" data-act="st" data-c="${esc(cid)}" data-id="${esc(t.id)}" aria-label="Feito"></button><span>${label?`<span class="tag" style="color:${ccol(cid)}">${esc(label)}</span>`:''}${esc(t.t)}</span></div>`}
+function studyRow(t,cid,label){return `<div class="tk ${t.done?'on':''} ${t.type==='Avaliação'?'av':''}"><button class="cb" data-act="st" data-c="${esc(cid)}" data-id="${esc(t.id)}" aria-label="Feito"></button><span>${label?`<span class="tag" style="color:${ccol(cid)};background:${cbg(cid)}">${esc(label)}</span>`:''}${esc(t.t)}</span></div>`}
 function studyList(k){const l=studyOn(k);return l.length?`<p class="st">Estudo</p>`+l.map(t=>studyRow(t,t.cid,t.short)).join(''):''}
 function vSemana(){
   const mk=key(S.wk),w=W(mk),t=key(today()),end=addD(S.wk,6),hs=habits(),st=settings();
@@ -347,7 +380,7 @@ function vCadeiras(){
   if(S.course&&S.courses[S.course])return vCurso(S.course);
   const list=Object.entries(S.courses).sort((a,b)=>String(a[1].name).localeCompare(b[1].name));
   return `<div class="narrow"><h1>Cadeiras</h1>${list.map(([id,c])=>{const r=calc(c),nx=(c.evals||[]).filter(e=>e.date&&e.date>=t&&num(e.grade)==null&&!e.done).sort((a,b)=>a.date.localeCompare(b.date))[0],p=progress(c);
-    return `<button class="card ccard" style="background:${ccol(id)}1a;color:inherit" data-act="copen" data-id="${esc(id)}"><h3 style="color:${ccol(id)}">${esc(c.name)}</h3><span class="muted">${nx?`Próximo: ${esc(nx.name)} — ${short(nx.date)} (${until(nx.date)})`:'Sem avaliações marcadas'}</span>
+    return `<button class="card ccard" style="background:var(--bg);color:inherit;border:1px solid var(--line)!important" data-act="copen" data-id="${esc(id)}"><h3><span class="tag" style="font-size:18px;padding:2px 8px;color:${ccol(id)};background:${cbg(id)}">${esc(S.courses[id].short||'')}</span>${esc(c.name)}</h3><span class="muted">${nx?`Próximo: ${esc(nx.name)} — ${short(nx.date)} (${until(nx.date)})`:'Sem avaliações marcadas'}</span>
     <div class="meta"><span class="pill">${r.avg!=null?'Média '+g1(r.avg):'Sem notas ainda'}</span>${c.goal?`<span class="pill">Objetivo ${esc(c.goal)}</span>`:''}</div>
     <div class="bar" style="margin:10px 0 0"><span class="muted">Programa</span><span class="t"><i style="width:${p}%"></i></span><span>${p}%</span></div></button>`}).join('')||loadBtn()}
   <input class="addt" data-add="course" data-draft="add-course" value="${dv('add-course')}" placeholder="+ Nova cadeira (Enter)"></div>`}
@@ -358,7 +391,7 @@ function vCurso(id){
   else{cl=`<span class="muted">Média atual</span><div class="big">${g1(r.avg)}</div>`;
     if(r.noW)cl+=`<p class="muted" style="margin:8px 0 0">Põe o peso (%) de cada momento para eu calcular quanto precisas para o objetivo.</p>`;
     else if(r.need!=null)cl+=`<p style="margin:8px 0 0">${r.need<=0?`Já tens o objetivo de <b>${g1(r.goal)}</b> garantido.`:r.need>20?`Para chegares a <b>${g1(r.goal)}</b> precisarias de ${g1(r.need)} nos restantes ${g1(r.rem)}% — acima de 20. Ajusta o objetivo ou vê se há melhoria de nota.`:`Para chegares a <b>${g1(r.goal)}</b> precisas de <b>${g1(r.need)}</b> de média nos restantes ${g1(r.rem)}%.`}</p>`}
-  return `<div class="narrow"><button class="lnk" data-act="cback">‹ Todas as cadeiras</button><h1 style="color:${ccol(id)}">${esc(c.name)}</h1>
+  return `<div class="narrow"><button class="lnk" data-act="cback">‹ Todas as cadeiras</button><h1>${esc(c.name)}</h1>
   <div class="grid3 blk" style="margin-bottom:20px"><div><label class="l" for="cg">Objetivo</label><input id="cg" data-f="cf" data-k="goal" value="${esc(c.goal||'')}"></div>
    <div style="grid-column:span 2"><label class="l" for="cp">Professor</label><input id="cp" data-f="cf" data-k="prof" value="${esc(c.prof||'')}"></div></div>
   <div class="calc">${cl}</div>
