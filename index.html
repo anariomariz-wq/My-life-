@@ -22,6 +22,24 @@
 --bg:light-dark(#ffffff,#121412);--ink:light-dark(#1b1d1b,#eceee9);--mute:light-dark(#6b706a,#9aa096);
 --line:light-dark(#e6e8e3,#2a2e2a);--soft:light-dark(#f4f6f2,#1a1e1a);--acc:light-dark(#2f5a3f,#86c49a);
 --accs:light-dark(#e3ede5,#1f3326);--out:light-dark(#a8412f,#ee8a77)}
+:root{--sem:light-dark(#3d5a80,#9fb8d8);--sem-s:light-dark(#e6edf6,#1c2633);
+--hab:light-dark(#2f6b45,#86c49a);--hab-s:light-dark(#e2f0e6,#1b2e21);--tre:light-dark(#b2473a,#f09a8c);--tre-s:light-dark(#fbe6e2,#33201d);
+--fin:light-dark(#2b5c9e,#8fb4ea);--fin-s:light-dark(#e3ecf8,#1b2534);--lei:light-dark(#9a6512,#e8b866);--lei-s:light-dark(#fbf0dc,#2f2617);
+--cad:light-dark(#6b4fa0,#b8a2e3);--cad-s:light-dark(#eee8f7,#26203a);--are:light-dark(#1f7a7a,#7fcfcf);--are-s:light-dark(#dff2f1,#162c2c);--sec:var(--sem);--secs:var(--sem-s)}
+body[data-s=semana]{--sec:var(--sem);--secs:var(--sem-s)}body[data-s=habitos]{--sec:var(--hab);--secs:var(--hab-s)}body[data-s=treinos]{--sec:var(--tre);--secs:var(--tre-s)}
+body[data-s=financas]{--sec:var(--fin);--secs:var(--fin-s)}body[data-s=leituras]{--sec:var(--lei);--secs:var(--lei-s)}body[data-s=cadeiras]{--sec:var(--cad);--secs:var(--cad-s)}body[data-s=areas]{--sec:var(--are);--secs:var(--are-s)}
+h1{color:var(--sec)}.tabs a.on{background:var(--sec)!important;color:#fff!important}
+.go{background:var(--sec)!important;color:#fff!important}.chip.on{background:var(--sec)!important;border-color:var(--sec)!important;color:#fff!important}
+.calc,.two div,.ins{background:var(--secs)!important}.ins{border-left-color:var(--sec)!important}
+.bar .t i{background:var(--sec)}.vbars i{background:var(--sec)}
+.tile.c-hab{background:var(--hab-s)}.tile.c-hab .big{color:var(--hab)}.tile.c-tre{background:var(--tre-s)}.tile.c-tre .big{color:var(--tre)}
+.tile.c-fin{background:var(--fin-s)}.tile.c-fin .big{color:var(--fin)}.tile.c-cad{background:var(--cad-s)}.tile.c-cad .big{color:var(--cad)}
+.day h3{display:inline-block;background:var(--sem-s);color:var(--sem);padding:4px 12px;border-radius:10px;margin-bottom:4px}
+.day.today{background:var(--sem-s);border-color:var(--sem)!important;box-shadow:none!important}.day.today h3{background:var(--sem);color:#fff}.day.today h3 span{color:#fff}
+.card.prio{background:var(--sem-s);border:0}
+.ccard{border:0!important}.ccard h3{color:inherit}
+.load{display:block;width:100%;min-height:54px;margin:0 0 26px;border:2px dashed var(--sec);border-radius:14px;background:var(--secs);color:var(--sec);font-weight:600;cursor:pointer;text-align:center;padding:14px}
+.load input{display:none}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
@@ -114,7 +132,7 @@ button.card{display:block;width:100%;text-align:left;cursor:pointer}
 .sec{font-size:14px;font-weight:600;margin:16px 0 4px}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .wkrow{display:grid;grid-template-columns:5.5em minmax(0,1fr) auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px;align-items:center}
-.wkrow .ok{color:var(--acc);font-weight:500}.wkrow.td{font-weight:600}
+.wkrow .ok{color:var(--tre);font-weight:500}.wkrow.td{font-weight:600}
 .vbars{display:flex;align-items:flex-end;gap:8px;height:110px}
 .vbars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:12px;color:var(--mute)}
 .vbars i{display:block;width:100%;background:var(--acc);border-radius:6px 6px 0 0;min-height:2px}
@@ -187,8 +205,11 @@ function getList(d){if(d.startsWith('a:')){const a=clone(S.areas[d.slice(2)]);a.
   const mk=key(S.wk),w=W(mk);return{obj:w,list:d==='p'?w.prio:w.days[d],save:()=>put('weeks',mk,{...w,week:mk})}}
 
 /* ---------- SEMANA ---------- */
+const CC=['#6b4fa0','#b2473a','#2b5c9e','#2f6b45','#9a6512','#1f7a7a','#a23b72'];
+function ccol(cid){const ids=Object.keys(S.courses).sort();const i=ids.indexOf(cid);return CC[(i<0?0:i)%CC.length]}
+const loadBtn=()=>`<label class="load">Carregar os meus dados (ficheiro mylife-dados.json)<input type="file" class="impf"></label>`;
 function studyOn(k){const r=[];Object.entries(S.courses).forEach(([cid,c])=>(c.tasks||[]).forEach(t=>{if(t.date===k)r.push({...t,cid,short:c.short||c.name.slice(0,3)})}));return r}
-function studyRow(t,cid,label){return `<div class="tk ${t.done?'on':''} ${t.type==='Avaliação'?'av':''}"><button class="cb" data-act="st" data-c="${esc(cid)}" data-id="${esc(t.id)}" aria-label="Feito"></button><span>${label?`<span class="tag">${esc(label)}</span>`:''}${esc(t.t)}</span></div>`}
+function studyRow(t,cid,label){return `<div class="tk ${t.done?'on':''} ${t.type==='Avaliação'?'av':''}"><button class="cb" data-act="st" data-c="${esc(cid)}" data-id="${esc(t.id)}" aria-label="Feito"></button><span>${label?`<span class="tag" style="color:${ccol(cid)}">${esc(label)}</span>`:''}${esc(t.t)}</span></div>`}
 function studyList(k){const l=studyOn(k);return l.length?`<p class="st">Estudo</p>`+l.map(t=>studyRow(t,t.cid,t.short)).join(''):''}
 function vSemana(){
   const mk=key(S.wk),w=W(mk),t=key(today()),end=addD(S.wk,6),hs=habits(),st=settings();
@@ -199,18 +220,18 @@ function vSemana(){
   const evs=allEvals();
   const lbl=S.wk.getMonth()===end.getMonth()?`${S.wk.getDate()}–${short(key(end))}`:`${short(mk)} – ${short(key(end))}`;
   const fresh=!Object.keys(S.courses).length&&!Object.keys(S.weeks).length;
-  return `<h1>A minha semana</h1>${fresh?'<p class="ins" style="margin-bottom:24px">Primeira vez aqui? Em <a href="#areas">Áreas</a> → Restaurar, escolhe o ficheiro com os teus dados.</p>':''}
+  return `<h1>A minha semana</h1>${fresh?loadBtn():''}
   <div class="tiles">
-   <a class="tile" href="#habitos"><small>Hábitos hoje</small><div class="big">${hn}/${hs.length}</div></a>
-   <a class="tile" href="#treinos"><small>Treinos esta semana</small><div class="big">${wo}</div></a>
-   <a class="tile" href="#financas"><small>Gasto este mês</small><div class="big">${eur.format(sp)}</div>${st.budget?`<span>de ${eur.format(st.budget)}</span>`:''}</a>
-   <a class="tile" href="#cadeiras"><small>Próxima avaliação</small>${nx?`<div class="big">${until(nx.date)}</div><span>${esc(nx.name)} · ${esc(nx.course)}</span>`:'<div class="big">—</div>'}</a>
+   <a class="tile c-hab" href="#habitos"><small>Hábitos hoje</small><div class="big">${hn}/${hs.length}</div></a>
+   <a class="tile c-tre" href="#treinos"><small>Treinos esta semana</small><div class="big">${wo}</div></a>
+   <a class="tile c-fin" href="#financas"><small>Gasto este mês</small><div class="big">${eur.format(sp)}</div>${st.budget?`<span>de ${eur.format(st.budget)}</span>`:''}</a>
+   <a class="tile c-cad" href="#cadeiras"><small>Próxima avaliação</small>${nx?`<div class="big">${until(nx.date)}</div><span>${esc(nx.name)} · ${esc(nx.course)}</span>`:'<div class="big">—</div>'}</a>
   </div>
   <div class="nav"><button class="ib" data-act="wk" data-n="-7" aria-label="Semana anterior">‹</button><b>Semana de ${lbl}</b><button class="ib" data-act="wk" data-n="7" aria-label="Semana seguinte">›</button></div>
-  <div class="blk card"><h2>Prioridades da semana</h2>${tasks(w.prio,'p')}</div>
+  <div class="blk card prio"><h2>Prioridades da semana</h2>${tasks(w.prio,'p')}</div>
   <div class="blk days">${DN.map((n,i)=>{const dd=addD(S.wk,i),k=key(dd),e=evs.filter(x=>x.date===k);
     return `<div class="day ${k===t?'today':''}"><h3>${n}<span>${dd.getDate()}</span></h3>
-    <div class="plan">Treino: ${esc(st.routine[i]||'—')}${e.filter(x=>!studyOn(k).some(s=>s.cid===x.cid&&s.type==='Avaliação')).map(x=>`<br><b>${esc(x.name)} · ${esc(x.course)}</b>`).join('')}</div>${tasks(w.days['d'+i],'d'+i)}${studyList(k)}</div>`}).join('')}</div>
+    <div class="plan">${Object.values(S.workouts).filter(x=>x.date===k).map(x=>`<span style="color:var(--tre);font-weight:500">Treino: ${esc(x.type)}</span><br>`).join('')}${e.filter(x=>!studyOn(k).some(s=>s.cid===x.cid&&s.type==='Avaliação')).map(x=>`<br><b>${esc(x.name)} · ${esc(x.course)}</b>`).join('')}</div>${tasks(w.days['d'+i],'d'+i)}${studyList(k)}</div>`}).join('')}</div>
   <div class="blk"><h2>Mini reflection</h2><div class="refl">${RQ.map(([q,l])=>`<div><label class="l" for="r${q}">${l}</label><textarea id="r${q}" data-f="refl" data-k="${q}">${esc(w.refl[q]||'')}</textarea></div>`).join('')}</div></div>
   <button class="lnk" data-act="carry">Passar o que ficou por fazer para a semana seguinte</button>`}
 
@@ -247,8 +268,8 @@ function vTreinos(){
   const mx=Math.max(4,...weeks.map(w=>w.n));
   return `<div class="narrow"><h1>Treinos</h1>
   <div class="two" style="margin:0 0 30px"><div><small>Treinos esta semana</small><b>${real.length}</b> <span class="muted">· ${mins} min</span></div><div><small>Como te sentiste</small><b>${fa?FEEL[Math.round(fa)]:'—'}</b></div></div>
-  <div class="blk"><h2>Plano desta semana</h2>${DN.map((n,i)=>{const k=key(addD(tm,i)),dn=wk.filter(([,x])=>x.date===k);
-    return `<div class="wkrow ${k===t?'td':''}"><span>${n}</span><span class="muted">${esc(st.routine[i]||'')}</span><span class="ok">${dn.length?'✓ '+esc(dn.map(([,x])=>x.type).join(', ')):''}</span></div>`}).join('')}</div>
+  <div class="blk"><h2>Esta semana</h2>${DN.map((n,i)=>{const k=key(addD(tm,i)),dn=wk.filter(([,x])=>x.date===k);
+    return `<div class="wkrow ${k===t?'td':''}"><span>${n}</span><span class="${dn.length?'ok':'muted'}">${dn.length?esc(dn.map(([,x])=>x.type+(x.feel?' · '+FEEL[x.feel]:'')).join(', ')):'—'}</span><span></span></div>`}).join('')}</div>
   <div class="blk card"><h2>Registar treino</h2>
    <label class="l">O que fizeste</label><div class="row">${WT.map(x=>`<button class="chip ${S.wtype===x?'on':''}" data-act="wtype" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>
    <label class="l">Como te sentiste</label><div class="row">${[1,2,3,4,5].map(x=>`<button class="chip ${S.wfeel===x?'on':''}" data-act="wfeel" data-n="${x}">${FEEL[x]}</button>`).join('')}</div>
@@ -258,7 +279,7 @@ function vTreinos(){
    <button class="go" data-act="wadd">Guardar treino</button></div>
   <div class="blk"><h2>Últimas 8 semanas</h2><div class="vbars">${weeks.map(w=>`<div><span>${w.n||''}</span><i style="height:${w.n/mx*80}%"></i>${w.l}</div>`).join('')}</div></div>
   <div class="blk"><h2>Histórico</h2>${all.slice(0,25).map(([id,x])=>`<div class="li"><div>${esc(x.type)}${x.dur?' · '+esc(x.dur)+' min':''}<small>${esc(short(x.date))}${x.feel?' · '+FEEL[x.feel]:''}${x.note?' · '+esc(x.note):''}</small></div><button class="x" data-act="wdel" data-id="${esc(id)}" aria-label="Apagar">×</button></div>`).join('')||'<p class="empty">Ainda sem treinos registados.</p>'}</div>
-  <details><summary>Editar plano semanal</summary>${DN.map((n,i)=>`<label class="l" for="rt${i}">${n}</label><input id="rt${i}" data-f="routine" data-i="${i}" value="${esc(st.routine[i]||'')}">`).join('')}</details></div>`}
+</div>`}
 
 /* ---------- FINANÇAS ---------- */
 function vFinancas(){
@@ -326,9 +347,9 @@ function vCadeiras(){
   if(S.course&&S.courses[S.course])return vCurso(S.course);
   const list=Object.entries(S.courses).sort((a,b)=>String(a[1].name).localeCompare(b[1].name));
   return `<div class="narrow"><h1>Cadeiras</h1>${list.map(([id,c])=>{const r=calc(c),nx=(c.evals||[]).filter(e=>e.date&&e.date>=t&&num(e.grade)==null&&!e.done).sort((a,b)=>a.date.localeCompare(b.date))[0],p=progress(c);
-    return `<button class="card" data-act="copen" data-id="${esc(id)}"><h3>${esc(c.name)}</h3><span class="muted">${nx?`Próximo: ${esc(nx.name)} — ${short(nx.date)} (${until(nx.date)})`:'Sem avaliações marcadas'}</span>
+    return `<button class="card ccard" style="background:${ccol(id)}1a;color:inherit" data-act="copen" data-id="${esc(id)}"><h3 style="color:${ccol(id)}">${esc(c.name)}</h3><span class="muted">${nx?`Próximo: ${esc(nx.name)} — ${short(nx.date)} (${until(nx.date)})`:'Sem avaliações marcadas'}</span>
     <div class="meta"><span class="pill">${r.avg!=null?'Média '+g1(r.avg):'Sem notas ainda'}</span>${c.goal?`<span class="pill">Objetivo ${esc(c.goal)}</span>`:''}</div>
-    <div class="bar" style="margin:10px 0 0"><span class="muted">Programa</span><span class="t"><i style="width:${p}%"></i></span><span>${p}%</span></div></button>`}).join('')||'<p class="empty">Ainda sem cadeiras.</p>'}
+    <div class="bar" style="margin:10px 0 0"><span class="muted">Programa</span><span class="t"><i style="width:${p}%"></i></span><span>${p}%</span></div></button>`}).join('')||loadBtn()}
   <input class="addt" data-add="course" data-draft="add-course" value="${dv('add-course')}" placeholder="+ Nova cadeira (Enter)"></div>`}
 function vCurso(id){
   const c=S.courses[id],r=calc(c),ev=c.evals||[],prog=c.program||[],secs=[...new Set(prog.map(x=>x.sec||'Programa'))];
@@ -337,7 +358,7 @@ function vCurso(id){
   else{cl=`<span class="muted">Média atual</span><div class="big">${g1(r.avg)}</div>`;
     if(r.noW)cl+=`<p class="muted" style="margin:8px 0 0">Põe o peso (%) de cada momento para eu calcular quanto precisas para o objetivo.</p>`;
     else if(r.need!=null)cl+=`<p style="margin:8px 0 0">${r.need<=0?`Já tens o objetivo de <b>${g1(r.goal)}</b> garantido.`:r.need>20?`Para chegares a <b>${g1(r.goal)}</b> precisarias de ${g1(r.need)} nos restantes ${g1(r.rem)}% — acima de 20. Ajusta o objetivo ou vê se há melhoria de nota.`:`Para chegares a <b>${g1(r.goal)}</b> precisas de <b>${g1(r.need)}</b> de média nos restantes ${g1(r.rem)}%.`}</p>`}
-  return `<div class="narrow"><button class="lnk" data-act="cback">‹ Todas as cadeiras</button><h1>${esc(c.name)}</h1>
+  return `<div class="narrow"><button class="lnk" data-act="cback">‹ Todas as cadeiras</button><h1 style="color:${ccol(id)}">${esc(c.name)}</h1>
   <div class="grid3 blk" style="margin-bottom:20px"><div><label class="l" for="cg">Objetivo</label><input id="cg" data-f="cf" data-k="goal" value="${esc(c.goal||'')}"></div>
    <div style="grid-column:span 2"><label class="l" for="cp">Professor</label><input id="cp" data-f="cf" data-k="prof" value="${esc(c.prof||'')}"></div></div>
   <div class="calc">${cl}</div>
@@ -377,7 +398,7 @@ function vAreas(){
   <input class="addt" data-add="area" data-draft="add-area" value="${dv('add-area')}" placeholder="+ Nova área (Enter)">
   <div class="blk" style="margin-top:40px"><h2>Cópia de segurança</h2><p class="muted">Os teus dados ficam guardados neste telemóvel. Faz uma cópia de vez em quando e guarda-a no Ficheiros ou no iCloud.</p>
   <button class="go" data-act="export">Fazer cópia de segurança</button>
-  <label class="l" for="imp">Restaurar a partir de uma cópia</label><input id="imp" type="file" accept="application/json,.json"></div></div>`}
+  <label class="l" for="imp">Restaurar a partir de uma cópia</label><input id="imp" type="file"></div></div>`}
 
 /* ---------- RENDER ---------- */
 const VIEWS={semana:vSemana,habitos:vHabitos,treinos:vTreinos,financas:vFinancas,leituras:vLeituras,cadeiras:vCadeiras,areas:vAreas};
@@ -387,7 +408,7 @@ const editing=()=>{const a=document.activeElement;return a&&app.contains(a)&&(a.
 function render(force){
   if(!force&&editing()){pending=true;return}
   const a=document.activeElement,fid=a&&app.contains(a)&&a.dataset?a.dataset.draft:null;
-  const r=route();try{app.innerHTML=VIEWS[r]()}catch(e){app.innerHTML='<p class="empty">Algo correu mal a mostrar esta página.</p>';console.error(e)}
+  const r=route();document.body.dataset.s=r;try{app.innerHTML=VIEWS[r]()}catch(e){app.innerHTML='<p class="empty">Algo correu mal a mostrar esta página.</p>';console.error(e)}
   document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.getAttribute('href')==='#'+r));
   if(fid){const n=app.querySelector(`[data-draft="${fid}"]`);if(n){n.focus();if(n.setSelectionRange&&n.type!=='date')try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}}
 }
@@ -468,7 +489,7 @@ app.addEventListener('click',e=>{
   render(1);
 });
 
-app.addEventListener('change',e=>{if(e.target.id!=='imp'||!e.target.files[0])return;const f=e.target.files[0];f.text().then(t=>{const o=JSON.parse(t);
+app.addEventListener('change',e=>{if(!(e.target.id==='imp'||e.target.classList.contains('impf'))||!e.target.files[0])return;const f=e.target.files[0];f.text().then(t=>{const o=JSON.parse(t);
   if(!o||typeof o!=='object'||!(o.courses||o.weeks||o.settings))throw 0;S.settings=o.settings||null;COLS.forEach(c=>S[c]=o[c]||{});saveLocal();render(1);toast('Dados restaurados')}).catch(()=>toast('Este ficheiro não é uma cópia válida.'))});
 loadLocal();
 render(1);
