@@ -167,7 +167,7 @@ h1{color:var(--ink)!important;font-weight:600}
 .bar .t i,.vbars i{background:var(--br)}.bar.o .t i{background:var(--out)}
 .ring circle+circle{stroke:#2383e2}.dot.on{background:#2383e2;border-color:#2383e2}
 .wkrow .ok{color:var(--ink)}
-.load{border-radius:8px}
+.load{border-radius:8px;text-decoration:none}
 .card.hoje{border:1px solid var(--br);background:var(--brs)}.card.hoje h2{font-size:20px}
 .ic summary{list-style:none;cursor:pointer;color:var(--ink);display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;min-height:28px}.ic summary::-webkit-details-marker{display:none}.ic summary small{flex-basis:100%;color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ic[open] summary{margin-bottom:6px}.ic .pill{cursor:inherit;min-height:0;padding:1px 8px;font-size:12px}
 .ihd{display:flex;gap:6px;align-items:center}.ttl{font-weight:600;font-size:18px;border:0;padding:4px 0;min-height:36px;background:transparent}
@@ -186,7 +186,7 @@ h1,h2,.card h3,.big{font-family:inherit!important}h1{font-weight:700;letter-spac
 <header class="top"><nav class="tabs" id="tabs">
 <a href="#semana">Semana</a><a href="#habitos">Hábitos</a><a href="#treinos">Treinos</a><a href="#financas">Finanças</a><a href="#leituras">Livros e podcasts</a><a href="#conteudo">Conteúdo</a><a href="#cadeiras">Cadeiras</a><a href="#areas">Áreas</a>
 </nav></header>
-<main class="wrap"><div id="app"></div><p id="note"></p></main>
+<main class="wrap"><div id="app"></div><p id="note"><a href="#dados" style="color:var(--mute)">Os meus dados e cópia de segurança</a></p></main>
 <div id="toast" hidden></div>
 <script>
 {
@@ -250,7 +250,7 @@ function hojeBlk(){const t=key(today()),mk=key(monday(today())),w=W(mk),i=(today
 const CC=[['#9f6b53','#f4eeee'],['#d9730d','#fbecdd'],['#cb912f','#fbf3db'],['#448361','#edf3ec'],['#337ea9','#e7f3f8'],['#9065b0','#f6f3f9'],['#c14c8a','#faf1f5'],['#d44c47','#fdebec']];
 function cpair(cid){const ids=Object.keys(S.courses).sort();const i=ids.indexOf(cid);return CC[(i<0?0:i)%CC.length]}
 const ccol=cid=>cpair(cid)[0],cbg=cid=>cpair(cid)[1];
-const loadBtn=()=>`<label class="load">Carregar os meus dados (ficheiro mylife-dados.json)<input type="file" class="impf"></label>`;
+const loadBtn=()=>`<a class="load" href="#dados">Carregar os meus dados</a>`;
 function studyOn(k){const r=[];Object.entries(S.courses).forEach(([cid,c])=>(c.tasks||[]).forEach(t=>{if(t.date===k)r.push({...t,cid,short:c.short||c.name.slice(0,3)})}));return r}
 function studyRow(t,cid,label){return `<div class="tk ${t.done?'on':''} ${t.type==='Avaliação'?'av':''}"><button class="cb" data-act="st" data-c="${esc(cid)}" data-id="${esc(t.id)}" aria-label="Feito"></button><span>${label?`<span class="tag" style="color:${ccol(cid)};background:${cbg(cid)}">${esc(label)}</span>`:''}${esc(t.t)}</span></div>`}
 function studyList(k){const l=studyOn(k);return l.length?`<p class="st">Estudo</p>`+l.map(t=>studyRow(t,t.cid,t.short)).join(''):''}
@@ -262,7 +262,7 @@ function vSemana(){
   const nx=allEvals().filter(e=>e.date>=t&&num(e.grade)==null&&!e.done).sort((a,b)=>a.date.localeCompare(b.date))[0];
   const evs=allEvals();
   const lbl=S.wk.getMonth()===end.getMonth()?`${S.wk.getDate()}–${short(key(end))}`:`${short(mk)} – ${short(key(end))}`;
-  const fresh=!Object.keys(S.courses).length&&!Object.keys(S.weeks).length;
+  const fresh=!Object.keys(S.courses).length;
   return `<h1>A minha semana</h1>${fresh?loadBtn():''}
   <div class="tiles">
    <a class="tile c-hab" href="#habitos"><small>Hábitos hoje</small><div class="big">${hn}/${hs.length}</div></a>
@@ -492,8 +492,19 @@ function vAreas(){
   <div class="blk" style="margin-top:40px"><h2>Cópia de segurança</h2><p class="muted">Os teus dados ficam guardados neste telemóvel. Faz uma cópia de vez em quando e guarda-a no Ficheiros ou no iCloud.</p>
   <button class="go" data-act="export">Fazer cópia de segurança</button>
   <label class="l" for="imp">Carregar dados de um ficheiro</label><input id="imp" type="file"></div></div>`}
+/* ---------- DADOS ---------- */
+function vDados(){return `<div class="narrow"><h1>Os meus dados</h1>
+  <div class="card blk"><h2>Colar código</h2><p class="muted">Copia o código que o Claude te enviou (começa por ML1:) e cola-o aqui.</p>
+  <textarea id="code" data-draft="code" placeholder="Cola aqui o código">${dv('code')}</textarea><button class="go" data-act="paste">Carregar dados</button></div>
+  <div class="blk"><h2>Cópia de segurança</h2><p class="muted">Os teus dados ficam guardados neste telemóvel. Faz uma cópia de vez em quando e guarda-a no Ficheiros.</p>
+  <button class="go" data-act="export">Fazer cópia de segurança</button>
+  <label class="l" for="imp">Carregar a partir de um ficheiro</label><input id="imp" type="file"></div></div>`}
+async function loadCode(txt){const m=String(txt).match(/ML1:([A-Za-z0-9+/=]+)/);let o;
+  if(m){const bin=Uint8Array.from(atob(m[1]),c=>c.charCodeAt(0));const ds=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));o=JSON.parse(await new Response(ds).text())}
+  else o=JSON.parse(txt);
+  if(!o||typeof o!=='object')throw 0;if(o.settings)S.settings=o.settings;COLS.forEach(c=>{if(o[c])S[c]={...S[c],...o[c]}});saveLocal()}
 /* ---------- RENDER ---------- */
-const VIEWS={semana:vSemana,habitos:vHabitos,treinos:vTreinos,financas:vFinancas,leituras:vLeituras,conteudo:vConteudo,cadeiras:vCadeiras,areas:vAreas};
+const VIEWS={semana:vSemana,habitos:vHabitos,treinos:vTreinos,financas:vFinancas,leituras:vLeituras,dados:vDados,conteudo:vConteudo,cadeiras:vCadeiras,areas:vAreas};
 const route=()=>{const h=location.hash.slice(1);return VIEWS[h]?h:'semana'};
 let pending=false;
 const editing=()=>{const a=document.activeElement;return a&&app.contains(a)&&(a.tagName==='TEXTAREA'||a.tagName==='SELECT'||(a.tagName==='INPUT'&&a.type!=='button'))};
@@ -592,6 +603,7 @@ app.addEventListener('click',e=>{
   else if(A==='mdel'){const a=clone(S.areas[S.area]);a.meetings=(a.meetings||[]).filter(y=>y.id!==b.dataset.i);put('areas',S.area,a)}
   else if(A==='ladd'){let u=(S.draft.lurl||'').trim();if(!u){toast('Cola o link.');return}if(!/^https?:\/\//i.test(u))u='https://'+u;const a=clone(S.areas[S.area]);a.links=[...(a.links||[]),{id:'l'+uid(),t:(S.draft.ltit||'').trim(),u}];put('areas',S.area,a);S.draft.ltit='';S.draft.lurl=''}
   else if(A==='ldel'){const a=clone(S.areas[S.area]);a.links=(a.links||[]).filter(y=>y.id!==b.dataset.i);put('areas',S.area,a)}
+  else if(A==='paste'){const v2=$('#code').value;loadCode(v2).then(()=>{S.draft.code='';location.hash='semana';render(1);toast('Dados carregados')}).catch(()=>toast('O código não está completo. Copia-o outra vez.'));return}
   else if(A==='adel'){const old=S.areas[id];del('areas',id);render(1);toast('Área removida',()=>put('areas',id,old));return}
   render(1);
 });
