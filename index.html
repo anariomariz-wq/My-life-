@@ -191,7 +191,7 @@ h1,h2,.card h3,.big{font-family:inherit!important}h1{font-weight:700;letter-spac
 </head>
 <body>
 <header class="top"><nav class="tabs" id="tabs">
-<a href="#semana">Semana</a><a href="#habitos">Hábitos</a><a href="#treinos">Treinos</a><a href="#financas">Finanças</a><a href="#leituras">Livros e podcasts</a><a href="#conteudo">Conteúdo</a><a href="#cadeiras">Cadeiras</a><a href="#areas">Áreas</a>
+<a href="#semana">Semana</a><a href="#habitos">Hábitos</a><a href="#treinos">Treinos</a><a href="#financas">Finanças</a><a href="#leituras">Livros e podcasts</a><a href="#conteudo">Conteúdo</a><a href="#viver">Viver</a><a href="#cadeiras">Cadeiras</a><a href="#areas">Áreas</a>
 </nav></header>
 <main class="wrap"><div id="app"></div><p id="note"><a href="#dados" style="color:var(--mute)">Os meus dados e cópia de segurança</a></p></main>
 <div id="toast" hidden></div>
@@ -205,7 +205,7 @@ const DEF_R=['Glúteo ou Pilates','Core + upper body','Pilates ou Glúteo','Desc
 const CATS={out:['Comida','Transporte','Lazer','Compras','Ginásio e saúde','Casa','Estudos','Outros'],in:['Mesada','Trabalho','Vendas','Outros']};
 const WT=['Glúteo','Superior + core','Perna completa','Full body','Pilates','Corrida','Caminhada','Descanso ativo'];
 const FEEL=['','Péssima','Cansada','Ok','Bem','Ótima'];
-const RK=['Livro','Podcast','Artigo'],RS=['A ler','Quero','Terminado'];
+const RK=['Livro','Podcast','Artigo'],RST=s=>s==='Quero'?'TBR':(s||'TBR');
 const DN=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 const RQ=[['q1','Destaques e conquistas da semana'],['q2','Como posso melhorar na próxima semana?'],['q3','O meu dia favorito e porquê'],['q4','3 coisas que me fizeram feliz']];
 const eur=new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'});
@@ -219,8 +219,8 @@ const num=v=>{if(v==null||v==='')return null;const x=parseFloat(String(v).replac
 const g1=x=>x.toLocaleString('pt-PT',{maximumFractionDigits:1});
 const short=k=>parse(k).toLocaleDateString('pt-PT',{day:'numeric',month:'short'});
 const until=k=>{const n=Math.round((parse(k)-today())/864e5);return n===0?'hoje':n===1?'amanhã':n<0?'há '+(-n)+' dias':'em '+n+' dias'};
-const COLS=['days','tx','weeks','workouts','reads','courses','areas','posts'];
-const S={settings:null,sel:today(),month:new Date(today().getFullYear(),today().getMonth(),1),wk:monday(today()),type:'out',cat:'Comida',wtype:'Glúteo',wfeel:4,rkind:'Livro',rf:'Tudo',course:null,draft:{}};
+const COLS=['days','tx','weeks','workouts','reads','courses','areas','posts','ideas'];
+const S={settings:null,sel:today(),month:new Date(today().getFullYear(),today().getMonth(),1),wk:monday(today()),type:'out',cat:'Comida',wtype:'Glúteo',wfeel:4,rkind:'Livro',rdest:'TBR',rf:'Tudo',icat:'Tudo',sg:0,course:null,draft:{}};
 COLS.forEach(c=>S[c]={});
 const LS='mylife-v2';
 function loadLocal(){try{const j=JSON.parse(localStorage.getItem(LS)||'{}');S.settings=j.settings||null;COLS.forEach(c=>S[c]=j[c]||{})}catch(e){}}
@@ -322,7 +322,7 @@ function vSemana(){
   <div class="blk"><h2>Mini reflection</h2><div class="refl">${RQ.map(([q,l])=>`<div><label class="l" for="r${q}">${l}</label><textarea id="r${q}" data-f="refl" data-k="${q}">${esc(w.refl[q]||'')}</textarea></div>`).join('')}</div></div>
   <button class="lnk" data-act="carry">Passar o que ficou por fazer para a semana seguinte</button>`}
 
-function areaEv(k){const r=[];Object.values(S.posts).forEach(x=>{if(x.date===k&&x.status!=='Ideia')r.push(`Conteúdo · ${x.fmt?x.fmt+': ':''}${x.title}`)});Object.values(S.areas).forEach(a=>(a.items||[]).forEach(x=>{if(x.meet===k)r.push(`${a.name.split(' ')[0]} · Reunião ${x.name}`);if(x.due===k&&x.status!=='Concluído')r.push(`${a.name.split(' ')[0]} · Prazo: ${x.name}`)}));return r.map(x=>`<span style="color:var(--br);font-weight:600">${esc(x)}</span><br>`).join('')}
+function areaEv(k){const r=[];Object.values(S.ideas||{}).forEach(x=>{if(x.date===k&&x.status!=='Vivida')r.push('Viver · '+x.title)});Object.values(S.posts).forEach(x=>{if(x.date===k&&x.status!=='Ideia')r.push(`Conteúdo · ${x.fmt?x.fmt+': ':''}${x.title}`)});Object.values(S.areas).forEach(a=>(a.items||[]).forEach(x=>{if(x.meet===k)r.push(`${a.name.split(' ')[0]} · Reunião ${x.name}`);if(x.due===k&&x.status!=='Concluído')r.push(`${a.name.split(' ')[0]} · Prazo: ${x.name}`)}));return r.map(x=>`<span style="color:var(--br);font-weight:600">${esc(x)}</span><br>`).join('')}
 /* ---------- HÁBITOS ---------- */
 function streak(id,k){let d=parse(k);if(!isDone(id,k))d=addD(d,-1);let n=0;while(isDone(id,key(d))&&n<999){n++;d=addD(d,-1)}return n}
 function recent(id,k,n){for(let i=1;i<=n;i++)if(isDone(id,key(addD(parse(k),-i))))return true;return false}
@@ -402,23 +402,33 @@ function vFinancas(){
   <details><summary>Orçamento mensal</summary><label class="l" for="bud">Quanto queres gastar no máximo por mês (€)</label><input id="bud" inputmode="decimal" data-f="budget" value="${st.budget||''}" placeholder="Ex.: 300"></details></div>`}
 
 /* ---------- LEITURAS ---------- */
+function readCard(id,r){const st=RST(r.status);
+  return `<div class="card"><h3>${esc(r.title)}</h3><span class="muted">${esc(r.kind)}${r.author?' · '+esc(r.author):''}${st==='Terminado'&&r.done?' · '+short(r.done):''}</span>
+    <div class="meta">${st==='TBR'?`<button class="pill" data-act="rstart" data-id="${esc(id)}">Começar a ler</button>`:`<button class="pill ${st==='Terminado'?'g':''}" data-act="rstat" data-id="${esc(id)}">${st==='Terminado'?'Lido':'A ler'} ↻</button>`}
+    ${st==='TBR'?'':`<span class="stars">${[1,2,3,4,5].map(n=>`<button class="${(r.rating||0)>=n?'on':''}" data-act="rrate" data-id="${esc(id)}" data-n="${n}" aria-label="${n} estrelas">★</button>`).join('')}</span>`}
+    <button class="x" style="margin-left:auto" data-act="rdel" data-id="${esc(id)}" aria-label="Apagar">×</button></div>
+    <details style="border:0;padding-top:6px"><summary>${st==='TBR'?'Porque me interessa':'Notas e ideias'}${r.notes?' ·':''}</summary><textarea data-f="rnote" data-id="${esc(id)}" placeholder="${st==='TBR'?'Quem recomendou, porque quero ler':'O que aprendeste, frases, ideias para aplicar'}">${esc(r.notes||'')}</textarea></details></div>`}
 function vLeituras(){
   const all=Object.entries(S.reads),yr=String(today().getFullYear());
-  const fin=all.filter(([,r])=>r.status==='Terminado'&&r.kind==='Livro'&&String(r.done||'').startsWith(yr)).length;
+  const fin=all.filter(([,r])=>RST(r.status)==='Terminado'&&r.kind==='Livro'&&String(r.done||'').startsWith(yr)).length;
   const items=all.filter(([,r])=>S.rf==='Tudo'||r.kind===S.rf);
+  const grp=s=>items.filter(([,r])=>RST(r.status)===s).sort((a,b)=>String(b[1].done||b[1].added||'').localeCompare(String(a[1].done||a[1].added||'')));
+  const reading=grp('A ler'),done=grp('Terminado'),tbr=grp('TBR');
+  const D=[['A ler','A ler agora'],['Terminado','Já li'],['TBR','TBR']];
   return `<div class="narrow"><h1>Livros e podcasts</h1>
-  <p class="muted">${fin} ${fin===1?'livro terminado':'livros terminados'} em ${yr} · ${all.filter(([,r])=>r.status==='A ler').length} a decorrer</p>
+  <p class="muted">${fin} ${fin===1?'livro lido':'livros lidos'} em ${yr} · ${all.filter(([,r])=>RST(r.status)==='A ler').length} a decorrer · ${all.filter(([,r])=>RST(r.status)==='TBR').length} no TBR</p>
   <div class="blk card"><h2>Adicionar</h2>
    <div class="seg">${RK.map(k=>`<button class="chip ${S.rkind===k?'on':''}" data-act="rkind" data-v="${k}">${k}</button>`).join('')}</div>
    <input data-draft="rtitle" value="${dv('rtitle')}" placeholder="Título" aria-label="Título">
    <label class="l" for="ra">${S.rkind==='Podcast'?'Podcast / convidado':'Autor'}</label><input id="ra" data-draft="rauthor" value="${dv('rauthor')}">
-   <button class="go" data-act="radd">Adicionar a "Quero"</button></div>
+   <label class="l">Onde fica</label><div class="seg">${D.map(([v,l])=>`<button class="chip ${S.rdest===v?'on':''}" data-act="rdest" data-v="${v}">${l}</button>`).join('')}</div>
+   <button class="go" data-act="radd">Adicionar</button></div>
   <div class="row blk">${['Tudo',...RK].map(k=>`<button class="chip ${S.rf===k?'on':''}" data-act="rf" data-v="${k}">${k==='Tudo'?'Tudo':k+'s'}</button>`).join('')}</div>
-  ${RS.map(s=>{const g=items.filter(([,r])=>r.status===s);return g.length?`<div class="blk"><h2>${s}</h2>${g.map(([id,r])=>`<div class="card"><h3>${esc(r.title)}</h3><span class="muted">${esc(r.kind)}${r.author?' · '+esc(r.author):''}</span>
-    <div class="meta"><button class="pill ${r.status==='Terminado'?'g':''}" data-act="rstat" data-id="${esc(id)}">${esc(r.status)} ↻</button>
-    <span class="stars">${[1,2,3,4,5].map(n=>`<button class="${(r.rating||0)>=n?'on':''}" data-act="rrate" data-id="${esc(id)}" data-n="${n}" aria-label="${n} estrelas">★</button>`).join('')}</span>
-    <button class="x" style="margin-left:auto" data-act="rdel" data-id="${esc(id)}" aria-label="Apagar">×</button></div>
-    <details style="border:0;padding-top:6px"><summary>Notas e ideias${r.notes?' ·':''}</summary><textarea data-f="rnote" data-id="${esc(id)}" placeholder="O que aprendeste, frases, ideias para aplicar">${esc(r.notes||'')}</textarea></details></div>`).join('')}</div>`:''}).join('')||'<p class="empty">Ainda nada aqui. Adiciona o livro que estás a ler.</p>'}</div>`}
+  <div class="blk"><h2>Registo</h2>
+   <p class="sec">A ler agora</p>${reading.map(([id,r])=>readCard(id,r)).join('')||'<p class="empty">Nada a decorrer.</p>'}
+   <p class="sec" style="margin-top:22px">Já li</p>${done.map(([id,r])=>readCard(id,r)).join('')||'<p class="empty">Os que terminares aparecem aqui.</p>'}</div>
+  <div class="blk"><h2>TBR <span class="muted" style="font-size:14px">${tbr.length}</span></h2><p class="muted" style="margin:-6px 0 12px">Livros que vais encontrando e te parecem interessantes.</p>
+   ${tbr.map(([id,r])=>readCard(id,r)).join('')||'<p class="empty">Quando ouvires falar de um livro interessante, guarda-o aqui.</p>'}</div></div>`}
 
 /* ---------- CADEIRAS ---------- */
 function calc(c){
@@ -554,8 +564,36 @@ async function loadCode(txt){const m=String(txt).match(/ML1:([A-Za-z0-9+/=]+)/);
   if(m){const bin=Uint8Array.from(atob(m[1]),c=>c.charCodeAt(0));const ds=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));o=JSON.parse(await new Response(ds).text())}
   else o=JSON.parse(txt);
   if(!o||typeof o!=='object')throw 0;if(o.settings){S.settings=o.settings;SY.mark('config/settings')}COLS.forEach(c=>{if(o[c]){S[c]={...S[c],...o[c]};Object.keys(o[c]).forEach(id=>SY.mark(c+'/'+id))}});saveLocal()}
+/* ---------- VIVER ---------- */
+const ICAT=['Aventura','Pessoas','Aprender','Criar','Porto','Viagens','Pequenos prazeres'],IST=['Ideia','Planeada','Vivida'];
+const SUG=[['Ver o nascer do sol na Foz e tomar o pequeno-almoço por lá','Porto'],['Piquenique ao pôr do sol nos Jardins do Palácio de Cristal','Porto'],['Atravessar a ponte D. Luís a pé ao anoitecer e jantar em Gaia','Porto'],['Ir a um concerto na Casa da Música, mesmo sem conhecer o artista','Porto'],['Passar uma tarde em Serralves sem pressa','Porto'],['Apanhar o comboio do Douro até ao Pinhão','Viagens'],['Ir de comboio passar um dia a Guimarães ou a Braga','Viagens'],['Fim de semana no Gerês, com um trilho e um banho de cascata','Aventura'],['Ver as estrelas numa noite sem lua em Montesinho','Aventura'],['Experimentar uma aula de surf em Matosinhos','Aventura'],['Inscrever-me numa corrida numa cidade onde nunca corri','Aventura'],['Planear uma escapadinha low-cost a uma cidade europeia','Viagens'],['Jantar em que cada amigo traz um prato de um país diferente','Pessoas'],['Convidar para um café alguém mais velho que admiro e fazer-lhe perguntas','Pessoas'],['Escrever uma carta à mão a alguém de quem gosto','Pessoas'],['Fazer um fim de semana de voluntariado','Pessoas'],['Ter uma aula experimental de cerâmica, dança ou pintura','Criar'],['Cozinhar pela primeira vez um prato de outro país','Criar'],['Fazer um vlog de um dia normal só para mim','Criar'],['Ir a uma conferência ou exposição fora da minha área','Aprender'],['Aprender o básico de uma língua nova durante um mês','Aprender'],['Escrever uma carta para a Rio daqui a 5 anos','Pequenos prazeres'],['Um domingo inteiro sem telemóvel','Pequenos prazeres'],['Ir ao cinema sozinha','Pequenos prazeres'],['Comprar flores para casa sem motivo nenhum','Pequenos prazeres'],['Descobrir uma livraria ou café que nunca visitei','Porto']];
+const askClaude=x=>'https://claude.ai/new?q='+encodeURIComponent(`Tenho esta ideia para tornar a minha vida mais interessante: "${x.title}". ${x.notes?'Notas: '+x.notes+'. ':''}Ajuda-me a torná-la real: o que preciso, quanto pode custar, quando faz sentido e um primeiro passo simples.`);
+function ideaCard(id,x){const st=x.status||'Ideia';
+  return `<details class="card ic" ${S.open===id?'open':''} data-o="${esc(id)}"><summary><b>${esc(x.title||'Sem título')}</b>${x.cat?`<span class="pill">${esc(x.cat)}</span>`:''}${x.date?`<span class="pill">${short(x.date)}</span>`:''}${st==='Vivida'&&x.memo?`<small>${esc(x.memo)}</small>`:''}</summary>
+  <input class="ttl" data-f="io" data-i="${esc(id)}" data-k="title" value="${esc(x.title||'')}" aria-label="Ideia">
+  <label class="l">Estado</label><div class="seg">${IST.map(v=>`<button class="chip ${st===v?'on':''}" data-act="ist" data-i="${esc(id)}" data-v="${v}">${v}</button>`).join('')}</div>
+  <label class="l">Tipo</label><div class="row">${ICAT.map(v=>`<button class="chip ${x.cat===v?'on':''}" data-act="icat2" data-i="${esc(id)}" data-v="${v}">${v}</button>`).join('')}</div>
+  <label class="l">Quando (aparece na Semana)</label><input type="date" data-f="io" data-i="${esc(id)}" data-k="date" value="${esc(x.date||'')}">
+  <label class="l">${st==='Vivida'?'Como foi':'Notas'}</label><textarea class="sm" data-f="io" data-i="${esc(id)}" data-k="${st==='Vivida'?'memo':'notes'}" placeholder="${st==='Vivida'?'O que sentiste, com quem foste, o que queres repetir':'Com quem, onde, quanto custa, links'}">${esc((st==='Vivida'?x.memo:x.notes)||'')}</textarea>
+  <div class="meta"><a class="pill" style="text-decoration:none;color:var(--ink)" href="${esc(askClaude(x))}" target="_blank" rel="noopener">Planear com o Claude ↗</a><button class="lnk" style="margin-left:auto" data-act="idel" data-i="${esc(id)}">Apagar</button></div></details>`}
+function vViver(){
+  const all=Object.entries(S.ideas),yr=String(today().getFullYear()),ym=key(today()).slice(0,7);
+  const lived=all.filter(([,x])=>x.status==='Vivida'),ly=lived.filter(([,x])=>String(x.lived||x.date||'').startsWith(yr)).length,lm=lived.filter(([,x])=>String(x.lived||x.date||'').startsWith(ym)).length;
+  const f=([,x])=>S.icat==='Tudo'||x.cat===S.icat;
+  const have=new Set(all.map(([,x])=>x.title));const pool=SUG.filter(([t])=>!have.has(t));const sg=pool.length?pool[S.sg%pool.length]:null;
+  const plan=all.filter(([,x])=>x.status==='Planeada').filter(f).sort((a,b)=>(a[1].date||'9').localeCompare(b[1].date||'9'));
+  const ideas=all.filter(([,x])=>(x.status||'Ideia')==='Ideia').filter(f).sort((a,b)=>String(b[1].added||'').localeCompare(String(a[1].added||'')));
+  const mem=lived.filter(f).sort((a,b)=>String(b[1].lived||b[1].date||'').localeCompare(String(a[1].lived||a[1].date||'')));
+  return `<div class="narrow"><h1>Viver</h1><p class="muted" style="margin:-8px 0 22px">A vida é feita dos nossos dias. Aqui ficam as ideias para os tornar memoráveis.</p>
+  <div class="two" style="margin:0 0 26px"><div><small>Vividas este mês</small><b>${lm}</b></div><div><small>Vividas em ${yr}</small><b>${ly}</b></div></div>
+  <input class="addt blk" data-add="idea" data-draft="add-idea" value="${dv('add-idea')}" placeholder="+ Nova ideia (Enter)">
+  ${sg?`<div class="card blk"><small class="muted">Uma sugestão</small><h3 style="margin-top:4px">${esc(sg[0])}</h3><div class="meta"><button class="pill g" data-act="sgadd" data-v="${esc(sg[0])}" data-c="${esc(sg[1])}">+ Guardar</button><button class="pill" data-act="sgnext">Outra</button></div></div>`:''}
+  <div class="row blk">${['Tudo',...ICAT].map(k=>`<button class="chip ${S.icat===k?'on':''}" data-act="icat" data-v="${k}">${k}</button>`).join('')}</div>
+  <div class="blk"><h2>Planeadas <span class="muted" style="font-size:14px">${plan.length}</span></h2>${plan.map(([id,x])=>ideaCard(id,x)).join('')||'<p class="empty">Escolhe uma ideia e dá-lhe uma data.</p>'}</div>
+  <div class="blk"><h2>Ideias <span class="muted" style="font-size:14px">${ideas.length}</span></h2>${ideas.map(([id,x])=>ideaCard(id,x)).join('')||'<p class="empty">Escreve a primeira ideia acima, ou guarda uma sugestão.</p>'}</div>
+  ${mem.length?`<div class="blk"><h2>Vividas</h2>${mem.map(([id,x])=>ideaCard(id,x)).join('')}</div>`:''}</div>`}
 /* ---------- RENDER ---------- */
-const VIEWS={semana:vSemana,habitos:vHabitos,treinos:vTreinos,financas:vFinancas,leituras:vLeituras,dados:vDados,conteudo:vConteudo,cadeiras:vCadeiras,areas:vAreas};
+const VIEWS={semana:vSemana,habitos:vHabitos,treinos:vTreinos,financas:vFinancas,leituras:vLeituras,dados:vDados,conteudo:vConteudo,viver:vViver,cadeiras:vCadeiras,areas:vAreas};
 const route=()=>{const h=location.hash.slice(1);return VIEWS[h]?h:'semana'};
 let pending=false;
 const editing=()=>{const a=document.activeElement;return a&&app.contains(a)&&(a.tagName==='TEXTAREA'||a.tagName==='SELECT'||(a.tagName==='INPUT'&&a.type!=='button'))};
@@ -574,6 +612,7 @@ function addItem(kind,v){
   if(kind==='habit')saveSettings({habits:[...habits(),{id:'h'+uid(),name:v}]});
   else if(kind==='course')put('courses','c'+uid(),{name:v,goal:'',prof:'',evals:[],program:[],notes:''});
   else if(kind==='area'){const nid='a'+uid();put('areas',nid,{name:v,kind:'projects',items:[],meetings:[],links:[],notes:'',order:Object.keys(S.areas).length+1});S.area=nid}
+  else if(kind==='idea'){put('ideas','v'+uid(),{title:v,status:'Ideia',cat:S.icat!=='Tudo'?S.icat:'',date:'',notes:'',added:key(today())})}
   else if(kind==='post'){const pid='p'+uid();put('posts',pid,{title:v,status:'Ideia',fmt:'',series:'',date:'',notes:''})}
   else if(kind==='item'){const a=clone(S.areas[S.area]);a.items=[...(a.items||[]),{id:'i'+uid(),name:v,status:'Em curso'}];put('areas',S.area,a)}
   else if(kind==='topic'){const c=clone(S.courses[S.course]);let sec=S.draft.psec||((c.program||[]).slice(-1)[0]||{}).sec||'Programa';
@@ -596,6 +635,7 @@ app.addEventListener('change',e=>{const el=e.target,f=el.dataset.f,v=el.value;if
   else if(f==='quote')saveSettings({quote:v.trim()});
   else if(f==='budget'){const b=num(v);saveSettings({budget:b>0?Math.round(b*100)/100:0})}
   else if(f==='rnote'){const r=clone(S.reads[el.dataset.id]);r.notes=v;put('reads',el.dataset.id,r)}
+  else if(f==='io'){const x=clone(S.ideas[el.dataset.i]);x[el.dataset.k]=v;S.open=el.dataset.i;put('ideas',el.dataset.i,x);if(el.type==='date')setTimeout(()=>{if(!editing())render(1);else pending=true},0)}
   else if(f==='po'){const x=clone(S.posts[el.dataset.i]);x[el.dataset.k]=v;S.open=el.dataset.i;put('posts',el.dataset.i,x);if(el.type==='date'||el.tagName==='SELECT')setTimeout(()=>{if(!editing())render(1);else pending=true},0)}
   else if(f==='ai'){S.open=el.dataset.i;const a=clone(S.areas[S.area]),x=(a.items||[]).find(y=>y.id===el.dataset.i);if(!x)return;x[el.dataset.k]=v;put('areas',S.area,a);if(el.type==='date'||el.tagName==='SELECT')setTimeout(()=>{if(!editing())render(1);else pending=true},0)}
   else if(f==='anote'){const a=clone(S.areas[el.dataset.id]);a.notes=v;put('areas',el.dataset.id,a)}
@@ -633,9 +673,18 @@ app.addEventListener('click',e=>{
   else if(A==='fdel'){const old=S.tx[id];del('tx',id);render(1);toast('Movimento apagado',()=>put('tx',id,old));return}
   else if(A==='rkind')S.rkind=v;
   else if(A==='rf')S.rf=v;
+  else if(A==='rdest')S.rdest=v;
   else if(A==='radd'){const t=(S.draft.rtitle||'').trim();if(!t){toast('Escreve o título.');return}
-    put('reads','r'+uid(),{kind:S.rkind,title:t,author:(S.draft.rauthor||'').trim(),status:'Quero',rating:0,notes:'',added:key(today())});S.draft.rtitle='';S.draft.rauthor=''}
-  else if(A==='rstat'){const r=clone(S.reads[id]),nx={'Quero':'A ler','A ler':'Terminado','Terminado':'Quero'};r.status=nx[r.status]||'A ler';if(r.status==='Terminado')r.done=key(today());put('reads',id,r)}
+    const o={kind:S.rkind,title:t,author:(S.draft.rauthor||'').trim(),status:S.rdest,rating:0,notes:'',added:key(today())};if(S.rdest==='Terminado')o.done=key(today());
+    put('reads','r'+uid(),o);S.draft.rtitle='';S.draft.rauthor='';toast(S.rdest==='TBR'?'Guardado no TBR':S.rdest==='A ler'?'Adicionado a "A ler"':'Adicionado a "Já li"')}
+  else if(A==='rstart'){const r=clone(S.reads[id]);r.status='A ler';r.start=key(today());put('reads',id,r);toast('Boa leitura!')}
+  else if(A==='rstat'){const r=clone(S.reads[id]);r.status=RST(r.status)==='A ler'?'Terminado':'A ler';if(r.status==='Terminado')r.done=key(today());put('reads',id,r)}
+  else if(A==='icat')S.icat=v;
+  else if(A==='sgnext')S.sg++;
+  else if(A==='sgadd'){put('ideas','v'+uid(),{title:v,status:'Ideia',cat:b.dataset.c||'',date:'',notes:'',added:key(today())});toast('Ideia guardada')}
+  else if(A==='ist'){const x=clone(S.ideas[b.dataset.i]);x.status=v;if(v==='Vivida'&&!x.lived)x.lived=x.date&&x.date<=key(today())?x.date:key(today());S.open=b.dataset.i;put('ideas',b.dataset.i,x);if(v==='Vivida')toast('Mais um dia bem vivido')}
+  else if(A==='icat2'){const x=clone(S.ideas[b.dataset.i]);x.cat=x.cat===v?'':v;S.open=b.dataset.i;put('ideas',b.dataset.i,x)}
+  else if(A==='idel'){const iid=b.dataset.i,old=S.ideas[iid];del('ideas',iid);render(1);toast('Apagada',()=>put('ideas',iid,old));return}
   else if(A==='rrate'){const r=clone(S.reads[id]);r.rating=r.rating===n?0:n;put('reads',id,r)}
   else if(A==='rdel'){const old=S.reads[id];del('reads',id);render(1);toast('Removido',()=>put('reads',id,old));return}
   else if(A==='copen'){S.course=id;render(1);scrollTo(0,0);return}
