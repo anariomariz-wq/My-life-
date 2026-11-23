@@ -506,7 +506,7 @@ function vConteudo(){
   return `<div class="narrow"><h1>Conteúdo</h1>
   <div class="two" style="margin:0 0 26px"><div><small>Ideias guardadas</small><b>${all.filter(([,x])=>x.status==='Ideia').length}</b></div><div><small>Publicados este mês</small><b>${pub}</b></div></div>
   ${next?`<p class="ins" style="margin:-10px 0 26px">Próximo: <b>${esc(next[1].title)}</b> · ${short(next[1].date)} (${until(next[1].date)})</p>`:''}
-  <input class="addt blk" data-add="post" data-draft="add-post" value="${dv('add-post')}" placeholder="+ Nova ideia (Enter)">
+  <form class="blk" style="display:flex;gap:8px;align-items:center"><input class="addt" style="flex:1" data-add="post" data-draft="add-post" value="${dv('add-post')}" placeholder="+ Nova ideia" enterkeyhint="done"><button type="submit" class="pill g">Guardar</button></form>
   <datalist id="cser">${CSER.map(v=>`<option value="${v}">`).join('')}</datalist>
   ${CST.map(st=>{const g=all.filter(([,x])=>(x.status||'Ideia')===st).sort((a,b)=>(a[1].date||'9').localeCompare(b[1].date||'9'));
     if(!g.length)return '';const inner=g.map(([id,x])=>postCard(id,x)).join('');
@@ -586,7 +586,7 @@ function vViver(){
   const mem=lived.filter(f).sort((a,b)=>String(b[1].lived||b[1].date||'').localeCompare(String(a[1].lived||a[1].date||'')));
   return `<div class="narrow"><h1>Viver</h1><p class="muted" style="margin:-8px 0 22px">A vida é feita dos nossos dias. Aqui ficam as ideias para os tornar memoráveis.</p>
   <div class="two" style="margin:0 0 26px"><div><small>Vividas este mês</small><b>${lm}</b></div><div><small>Vividas em ${yr}</small><b>${ly}</b></div></div>
-  <input class="addt blk" data-add="idea" data-draft="add-idea" value="${dv('add-idea')}" placeholder="+ Nova ideia (Enter)">
+  <form class="blk" style="display:flex;gap:8px;align-items:center"><input class="addt" style="flex:1" data-add="idea" data-draft="add-idea" value="${dv('add-idea')}" placeholder="+ Nova ideia" enterkeyhint="done"><button type="submit" class="pill g">Guardar</button></form>
   ${sg?`<div class="card blk"><small class="muted">Uma sugestão</small><h3 style="margin-top:4px">${esc(sg[0])}</h3><div class="meta"><button class="pill g" data-act="sgadd" data-v="${esc(sg[0])}" data-c="${esc(sg[1])}">+ Guardar</button><button class="pill" data-act="sgnext">Outra</button></div></div>`:''}
   <div class="row blk">${['Tudo',...ICAT].map(k=>`<button class="chip ${S.icat===k?'on':''}" data-act="icat" data-v="${k}">${k}</button>`).join('')}</div>
   <div class="blk"><h2>Planeadas <span class="muted" style="font-size:14px">${plan.length}</span></h2>${plan.map(([id,x])=>ideaCard(id,x)).join('')||'<p class="empty">Escolhe uma ideia e dá-lhe uma data.</p>'}</div>
@@ -626,7 +626,10 @@ app.addEventListener('change',e=>{const el=e.target;if(!el.classList.contains('i
     const r=Math.max(W2/img.width,H2/img.height),w=img.width*r,h=img.height*r;x.drawImage(img,(W2-w)/2,(H2-h)/2,w,h);
     try{saveSettings({[k]:c.toDataURL('image/jpeg',.82)});saveLocal();render(1)}catch(err){toast('A imagem é demasiado grande.')}URL.revokeObjectURL(u)};
   img.onerror=()=>toast('Não consegui abrir esta imagem.');img.src=u});
-app.addEventListener('keydown',e=>{const el=e.target.closest('[data-add]');if(!el||e.key!=='Enter')return;e.preventDefault();const v=el.value.trim();if(!v)return;S.draft[el.dataset.draft]='';addItem(el.dataset.add,v);render(1)});
+function commitAdd(el){if(!el)return;const v=(el.value||'').trim();if(!v)return;el.value='';S.draft[el.dataset.draft]='';addItem(el.dataset.add,v);render(1)}
+app.addEventListener('keydown',e=>{const el=e.target.closest('[data-add]');if(!el||!(e.key==='Enter'||e.keyCode===13))return;e.preventDefault();commitAdd(el)});
+app.addEventListener('submit',e=>{e.preventDefault();commitAdd(e.target.querySelector('[data-add]'))});
+app.addEventListener('focusout',e=>{const el=e.target;if(el&&el.dataset&&el.dataset.add&&['idea','post'].includes(el.dataset.add))setTimeout(()=>commitAdd(el),0)});
 app.addEventListener('input',e=>{const el=e.target;if(el.dataset.draft)S.draft[el.dataset.draft]=el.value});
 app.addEventListener('change',e=>{const el=e.target,f=el.dataset.f,v=el.value;if(el.dataset.draft)S.draft[el.dataset.draft]=v;if(el.tagName==='SELECT'&&!f)render(1);if(!f)return;
   if(f==='refl'){const mk=key(S.wk),w=W(mk);w.refl[el.dataset.k]=v;put('weeks',mk,{...w,week:mk})}
