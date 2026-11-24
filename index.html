@@ -78,6 +78,7 @@ label.l{display:block;font-size:13px;color:var(--mute);margin:14px 0 6px}
 .tile small{display:block;color:var(--mute);font-size:13px}.tile .big{font-size:28px;line-height:1.15}.tile span{font-size:14px;color:var(--mute)}
 .days{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .day{border:1px solid var(--line);border-radius:14px;padding:14px}
+.cal{margin:6px 0 8px}.ce{display:flex;align-items:baseline;gap:8px;font-size:13.5px;line-height:1.35;margin:3px 0}.ce i{width:7px;height:7px;border-radius:50%;flex:none;transform:translateY(-1px)}.ce span{color:var(--ink)}.ce time{color:var(--mute);min-width:38px;font-variant-numeric:tabular-nums}
 .day.today{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
 .day h3{margin:0;font:500 19px Newsreader,Georgia,serif}.day h3 span{font:13px Inter,sans-serif;color:var(--mute);margin-left:6px}
 .plan{font-size:13px;color:var(--mute);margin:4px 0 8px}.plan b{font-weight:500;color:var(--out)}
@@ -219,7 +220,7 @@ const num=v=>{if(v==null||v==='')return null;const x=parseFloat(String(v).replac
 const g1=x=>x.toLocaleString('pt-PT',{maximumFractionDigits:1});
 const short=k=>parse(k).toLocaleDateString('pt-PT',{day:'numeric',month:'short'});
 const until=k=>{const n=Math.round((parse(k)-today())/864e5);return n===0?'hoje':n===1?'amanhã':n<0?'há '+(-n)+' dias':'em '+n+' dias'};
-const COLS=['days','tx','weeks','workouts','reads','courses','areas','posts','ideas'];
+const COLS=['days','tx','weeks','workouts','reads','courses','areas','posts','ideas','cal'];
 const S={settings:null,sel:today(),month:new Date(today().getFullYear(),today().getMonth(),1),wk:monday(today()),type:'out',cat:'Comida',wtype:'Glúteo',wfeel:4,rkind:'Livro',rdest:'TBR',rf:'Tudo',icat:'Tudo',sg:0,course:null,draft:{}};
 COLS.forEach(c=>S[c]={});
 const LS='mylife-v2';
@@ -286,7 +287,7 @@ function getList(d){if(d.startsWith('j:')){const[,aid,iid]=d.split(':'),a=clone(
 /* ---------- SEMANA ---------- */
 function hojeBlk(){const t=key(today()),mk=key(monday(today())),w=W(mk),i=(today().getDay()+6)%7,mine=w.days['d'+i]||[],st=studyOn(t),ev=areaEv(t);
   const left=mine.filter(x=>!x.done).length+st.filter(x=>!x.done).length;
-  return `<div class="card blk hoje"><h2>Hoje · ${DN[i]} ${today().getDate()}</h2><p class="muted" style="margin:-6px 0 8px">${left?left+(left===1?' coisa por fazer':' coisas por fazer'):'Nada pendente para hoje.'}</p>${ev}
+  return `<div class="card blk hoje"><h2>Hoje · ${DN[i]} ${today().getDate()}</h2><p class="muted" style="margin:-6px 0 8px">${left?left+(left===1?' coisa por fazer':' coisas por fazer'):'Nada pendente para hoje.'}</p>${calEv(t)}${ev}
   ${mine.length?mine.map(x=>`<div class="tk ${x.done?'on':''}"><button class="cb" data-act="tth" data-id="${esc(x.id)}" aria-label="Feito"></button><span>${esc(x.t)}</span></div>`).join(''):''}
   ${st.map(x=>studyRow(x,x.cid,x.short)).join('')}</div>`}
 const CC=[['#9f6b53','#f4eeee'],['#d9730d','#fbecdd'],['#cb912f','#fbf3db'],['#448361','#edf3ec'],['#337ea9','#e7f3f8'],['#9065b0','#f6f3f9'],['#c14c8a','#faf1f5'],['#d44c47','#fdebec']];
@@ -320,10 +321,13 @@ function vSemana(){
   <div class="blk card prio"><h2>Prioridades da semana</h2>${tasks(w.prio,'p')}</div>
   <div class="blk days">${DN.map((n,i)=>{const dd=addD(S.wk,i),k=key(dd),e=evs.filter(x=>x.date===k);
     return `<div class="day ${k===t?'today':''}"><h3>${n}<span>${dd.getDate()}</span></h3>
-    <div class="plan">${areaEv(k)}${Object.values(S.workouts).filter(x=>x.date===k).map(x=>`<span style="color:var(--tre);font-weight:500">Treino: ${esc(x.type)}</span><br>`).join('')}${e.filter(x=>!studyOn(k).some(s=>s.cid===x.cid&&s.type==='Avaliação')).map(x=>`<br><b>${esc(x.name)} · ${esc(x.course)}</b>`).join('')}</div>${tasks(w.days['d'+i],'d'+i)}${studyList(k)}</div>`}).join('')}</div>
+    <div class="plan">${calEv(k)}${areaEv(k)}${Object.values(S.workouts).filter(x=>x.date===k).map(x=>`<span style="color:var(--tre);font-weight:500">Treino: ${esc(x.type)}</span><br>`).join('')}${e.filter(x=>!studyOn(k).some(s=>s.cid===x.cid&&s.type==='Avaliação')).map(x=>`<br><b>${esc(x.name)} · ${esc(x.course)}</b>`).join('')}</div>${tasks(w.days['d'+i],'d'+i)}${studyList(k)}</div>`}).join('')}</div>
   <div class="blk"><h2>Mini reflection</h2><div class="refl">${RQ.map(([q,l])=>`<div><label class="l" for="r${q}">${l}</label><textarea id="r${q}" data-f="refl" data-k="${q}">${esc(w.refl[q]||'')}</textarea></div>`).join('')}</div></div>
   <button class="lnk" data-act="carry">Passar o que ficou por fazer para a semana seguinte</button>`}
 
+function calCol(c){c=(c||'').toLowerCase();return /school|exame|study/.test(c)?'var(--cad)':/work|csc/.test(c)?'var(--fin)':/jeportugal|^je/.test(c)?'var(--are)':/happy|pessoal|body/.test(c)?'var(--br)':/feriad/.test(c)?'var(--out)':'var(--mute)'}
+function calEv(k){const d=S.cal[k];const l=(d&&d.evs)||[];if(!l.length)return '';
+  return '<div class="cal">'+l.map(e=>`<div class="ce"><i style="background:${calCol(e.c)}"></i><time>${e.s?esc(e.s):'Dia'}</time><span>${esc(e.t)}</span></div>`).join('')+'</div>'}
 function areaEv(k){const r=[];Object.values(S.ideas||{}).forEach(x=>{if(x.date===k&&x.status!=='Vivida')r.push('Viver · '+x.title)});Object.values(S.posts).forEach(x=>{if(x.date===k&&x.status!=='Ideia')r.push(`Conteúdo · ${x.fmt?x.fmt+': ':''}${x.title}`)});Object.values(S.areas).forEach(a=>(a.items||[]).forEach(x=>{if(x.meet===k)r.push(`${a.name.split(' ')[0]} · Reunião ${x.name}`);if(x.due===k&&x.status!=='Concluído')r.push(`${a.name.split(' ')[0]} · Prazo: ${x.name}`)}));return r.map(x=>`<span style="color:var(--br);font-weight:600">${esc(x)}</span><br>`).join('')}
 /* ---------- HÁBITOS ---------- */
 function streak(id,k){let d=parse(k);if(!isDone(id,k))d=addD(d,-1);let n=0;while(isDone(id,key(d))&&n<999){n++;d=addD(d,-1)}return n}
