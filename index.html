@@ -750,8 +750,16 @@ loadLocal();
 render(1);
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-SY.run();setInterval(()=>{if(!document.hidden)SY.run()},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)SY.run()});addEventListener('online',()=>SY.run());
-setInterval(()=>{const t=key(today());if(t!==S._t){S._t=t;if(!editing())render(1)}},60000);S._t=key(today());
+/* ---------- ROLLOVER: tarefas não cumpridas passam para hoje ---------- */
+function rollover(){const t=today(),tk=key(monday(t)),ti='d'+((t.getDay()+6)%7),tw=W(tk),have=new Set(tw.days[ti].map(x=>x.id)),ch={};let n=0;
+  for(let b=1;b<=14;b++){const d=addD(t,-b),mk=key(monday(d)),di='d'+((d.getDay()+6)%7);if(!S.weeks[mk])continue;
+    const w=mk===tk?tw:(ch[mk]||W(mk)),list=w.days[di]||[],keep=[];
+    list.forEach(x=>{if(x&&!x.done){if(!have.has(x.id)){tw.days[ti].push(x);have.add(x.id)}n++}else keep.push(x)});
+    if(keep.length!==list.length){w.days[di]=keep;if(mk!==tk)ch[mk]=w}}
+  if(!n)return;Object.entries(ch).forEach(([mk,w])=>put('weeks',mk,{...w,week:mk}));put('weeks',tk,{...tw,week:tk});
+  if(!editing())render(1);toast(n===1?'1 tarefa por fazer passou para hoje':n+' tarefas por fazer passaram para hoje')}
+rollover();SY.run().finally(rollover);setInterval(()=>{if(!document.hidden)SY.run()},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)SY.run()});addEventListener('online',()=>SY.run());
+setInterval(()=>{const t=key(today());if(t!==S._t){S._t=t;rollover();if(!editing())render(1)}},60000);S._t=key(today());
 }
 </script>
 </body>
