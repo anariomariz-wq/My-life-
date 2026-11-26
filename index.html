@@ -228,7 +228,7 @@ function loadLocal(){try{const j=JSON.parse(localStorage.getItem(LS)||'{}');S.se
 function saveLocal(){try{const o={settings:S.settings};COLS.forEach(c=>o[c]=S[c]);localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
 let sT;function write(path){clearTimeout(sT);sT=setTimeout(saveLocal,150);if(path)SY.mark(path)}
 /* ---------- SYNC (Supabase) ---------- */
-const SB_URL='https://fcjtzwevpfuobhvtszss.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjanR6d2V2cGZ1b2JodnRzenNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyNTQ1MTcsImV4cCI6MjExMDgzMDUxN30.UtDV5blrD6iGCZfi2RS8rQT82gRdrVQ-XYKeGY5GjIw',ML='mylife-sync';
+const SB_URL='https://fcjtzwevpfuobhvtszss.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjanR6d2V2cGZ1b2JodnRzenNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyNTQ1MTcsImV4cCI6MjExMDgzMDUxN30.UtDV5blrD6iGCZfi2RS8rQT82gRdrVQ-XYKeGY5GjIw',ML='mylife-sync',MC='mylife-cred';
 const SY={m:{ts:{},dirty:{},since:0,ses:null,last:0},busy:false,t:null,
   load(){try{Object.assign(this.m,JSON.parse(localStorage.getItem(ML)||'{}'))}catch(e){}},
   save(){try{localStorage.setItem(ML,JSON.stringify(this.m))}catch(e){}},
@@ -238,16 +238,26 @@ const SY={m:{ts:{},dirty:{},since:0,ses:null,last:0},busy:false,t:null,
   setv(path,v){if(path==='config/settings'){S.settings=v;return}const[c,id]=path.split('/');if(!S[c])return;if(v==null)delete S[c][id];else S[c][id]=v},
   async api(method,url,body,auth=true,extra={}){const h={apikey:SB_KEY,'Content-Type':'application/json',...extra};
     if(auth){await this.fresh();h.Authorization='Bearer '+this.m.ses.access_token}
-    const r=await fetch(SB_URL+url,{method,headers:h,body:body?JSON.stringify(body):undefined});
+    let r=await fetch(SB_URL+url,{method,headers:h,body:body?JSON.stringify(body):undefined});
+    if(auth&&r.status===401&&this.m.ses){this.m.ses.expires_at=0;await this.fresh();h.Authorization='Bearer '+this.m.ses.access_token;r=await fetch(SB_URL+url,{method,headers:h,body:body?JSON.stringify(body):undefined})}
     const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
     if(!r.ok)throw new Error((j&&(j.msg||j.error_description||j.message||j.error))||('HTTP '+r.status));return j},
-  async fresh(){const s=this.m.ses;if(s&&s.expires_at&&Date.now()/1000<s.expires_at-60)return;
-    const j=await this.api('POST','/auth/v1/token?grant_type=refresh_token',{refresh_token:s.refresh_token},false);this.keep(j)},
+  cred(){try{const c=JSON.parse(localStorage.getItem(MC)||'null');return c&&c.e&&c.p?c:null}catch(e){return null}},
+  async fresh(){
+    /* outra janela da app pode já ter renovado a sessão: usa a mais recente */
+    try{const st=JSON.parse(localStorage.getItem(ML)||'{}');if(st.ses&&this.m.ses&&st.ses.refresh_token!==this.m.ses.refresh_token&&(st.ses.expires_at||0)>=(this.m.ses.expires_at||0))this.m.ses=st.ses}catch(e){}
+    const s=this.m.ses;if(s&&s.expires_at&&Date.now()/1000<s.expires_at-60)return;
+    if(this._fr)return this._fr;
+    this._fr=(async()=>{try{this.keep(await this.api('POST','/auth/v1/token?grant_type=refresh_token',{refresh_token:s.refresh_token},false))}
+      catch(e){const c=this.cred();if(!c)throw e;this.keep(await this.api('POST','/auth/v1/token?grant_type=password',{email:c.e,password:c.p},false))}
+      finally{this._fr=null}})();
+    return this._fr},
   keep(j){this.m.ses={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at||(Date.now()/1000+(j.expires_in||3600)),email:(j.user&&j.user.email)||(this.m.ses&&this.m.ses.email)};this.save()},
   async login(email,pw,signup){if(signup){const j=await this.api('POST','/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+location.pathname),{email,password:pw},false);if(!j||!j.access_token)return 'confirm';this.keep(j)}
     else this.keep(await this.api('POST','/auth/v1/token?grant_type=password',{email,password:pw},false));
-    this.m.since=0;await this.pull(true);await this.push();return 'ok'},
-  logout(){this.m.ses=null;this.m.since=0;this.save()},
+    try{localStorage.setItem(MC,JSON.stringify({e:email,p:pw}))}catch(e){}
+    this.m.err='';this.m.since=0;await this.pull(true);await this.push();this.m.err='';this.save();return 'ok'},
+  logout(){this.m.ses=null;this.m.since=0;this.m.err='';try{localStorage.removeItem(MC)}catch(e){}this.save()},
   async pull(first){const rows=await this.api('GET','/rest/v1/docs?select=path,data,updated_at&updated_at=gt.'+(this.m.since||0)+'&order=updated_at.asc');
     const seen=new Set();let ch=0;(rows||[]).forEach(r=>{seen.add(r.path);if(!this.m.ts[r.path]||r.updated_at>this.m.ts[r.path]){if(this.m.dirty[r.path]&&this.m.dirty[r.path]>r.updated_at)return;this.setv(r.path,r.data);this.m.ts[r.path]=r.updated_at;delete this.m.dirty[r.path];ch++}
       this.m.since=Math.max(this.m.since,r.updated_at)});
