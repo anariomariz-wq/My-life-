@@ -332,7 +332,6 @@ function vSemana(){
   <div class="blk days">${DN.map((n,i)=>{const dd=addD(S.wk,i),k=key(dd),e=evs.filter(x=>x.date===k);
     return `<div class="day ${k===t?'today':''}"><h3>${n}<span>${dd.getDate()}</span></h3>
     <div class="plan">${calEv(k)}${areaEv(k)}${Object.values(S.workouts).filter(x=>x.date===k).map(x=>`<span style="color:var(--tre);font-weight:500">Treino: ${esc(x.type)}</span><br>`).join('')}${e.filter(x=>!studyOn(k).some(s=>s.cid===x.cid&&s.type==='Avaliação')).map(x=>`<br><b>${esc(x.name)} · ${esc(x.course)}</b>`).join('')}</div>${tasks(w.days['d'+i],'d'+i)}${studyList(k)}</div>`}).join('')}</div>
-  <div class="blk"><h2>Mini reflection</h2><div class="refl">${RQ.map(([q,l])=>`<div><label class="l" for="r${q}">${l}</label><textarea id="r${q}" data-f="refl" data-k="${q}">${esc(w.refl[q]||'')}</textarea></div>`).join('')}</div></div>
   <button class="lnk" data-act="carry">Passar o que ficou por fazer para a semana seguinte</button>`}
 
 function calCol(c){c=(c||'').toLowerCase();return /school|exame|study/.test(c)?'var(--cad)':/work|csc/.test(c)?'var(--fin)':/jeportugal|^je/.test(c)?'var(--are)':/happy|pessoal|body/.test(c)?'var(--br)':/feriad/.test(c)?'var(--out)':'var(--mute)'}
